@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X, Save } from 'lucide-react'; // Adicionado Save
-import { showError, showSuccess } from '@/utils/toast'; // Adicionado showSuccess
+import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,19 +13,15 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
-import { Textarea } from '@/components/ui/textarea'; // Importar Textarea
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const QuickReflectionPage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [reflectionContent, setReflectionContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
-  const [userNotes, setUserNotes] = useState<string>('');
-  const [initialUserNotes, setInitialUserNotes] = useState<string>('');
+  const [reflectionContent, setReflectionContent] = useState<{ text: string | null; reflection: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [isSavingNotes, setIsSavingNotes] = useState(false); // Novo estado para salvar anotações
 
   const { 
     completedDailyTasksCount, 
@@ -54,7 +50,7 @@ const QuickReflectionPage = () => {
   const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
-    const fetchReflectionAndNotes = async () => {
+    const fetchReflection = async () => {
       if (!session?.user) {
         setLoading(false);
         return;
@@ -82,10 +78,10 @@ const QuickReflectionPage = () => {
       const reflectionTemplateId = dailyContentData?.quick_reflection;
 
       if (reflectionTemplateId) {
-        // Fetch template content
+        // Fetch template content, including 'reflection' field
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, url_audio')
+          .select('text_content, reflection, url_audio') // Adicionado 'reflection'
           .eq('id', reflectionTemplateId)
           .single();
 
@@ -94,7 +90,11 @@ const QuickReflectionPage = () => {
           showError("Erro ao carregar o conteúdo da reflexão.");
           setReflectionContent(null);
         } else if (templateData) {
-          setReflectionContent({ text: templateData.text_content, url_audio: templateData.url_audio || null });
+          setReflectionContent({ 
+            text: templateData.text_content, 
+            reflection: templateData.reflection || null, // Define reflection
+            url_audio: templateData.url_audio || null 
+          });
         } else {
           setReflectionContent(null);
         }
@@ -102,86 +102,27 @@ const QuickReflectionPage = () => {
         setReflectionContent(null);
       }
 
-      // Fetch user's existing notes for this task
-      const { data: userProgressData, error: userProgressError } = await supabase
-        .from('daily_tasks_progress')
-        .select('text_value')
-        .eq('user_id', userId)
-        .eq('task_name', currentTaskName)
-        .eq('task_date', todayStr)
-        .single();
-
-      if (userProgressError && userProgressError.code !== 'PGRST116') {
-        console.error("Erro ao buscar anotações do usuário para reflexão rápida:", userProgressError);
-        showError("Erro ao carregar suas anotações.");
-        setUserNotes('');
-        setInitialUserNotes('');
-      } else if (userProgressData) {
-        setUserNotes(userProgressData.text_value || '');
-        setInitialUserNotes(userProgressData.text_value || '');
-      } else {
-        setUserNotes('');
-        setInitialUserNotes('');
-      }
-
       setLoading(false);
     };
-    fetchReflectionAndNotes();
+    fetchReflection();
   }, [session, navigate, queryClient]);
 
   const handleShare = () => {
     if (navigator.share && reflectionContent?.text) {
+      const shareText = `Reflexão Rápida: "${reflectionContent.text}"\n\n${reflectionContent.reflection ? `Para Refletir: ${reflectionContent.reflection}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Reflexão Rápida - Raízes da Fé',
-        text: `Reflexão Rápida: "${reflectionContent.text}"\n\nConfira o app Raízes da Fé!`,
+        text: shareText,
         url: window.location.href,
       })
       .then(() => showSuccess('Reflexão compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Reflexão Rápida: "${reflectionContent?.text || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Reflexão Rápida: "${reflectionContent?.text || ''}"\n\n${reflectionContent?.reflection ? `Para Refletir: ${reflectionContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Reflexão copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a reflexão.'));
     }
-  };
-
-  const handleSaveNotes = async () => {
-    if (!session) {
-      showError("Você precisa estar logado para salvar suas anotações.");
-      return;
-    }
-    setIsSavingNotes(true);
-    const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
-
-    try {
-      const { error } = await supabase
-        .from('daily_tasks_progress')
-        .upsert({
-          user_id: userId,
-          task_name: currentTaskName,
-          task_date: today,
-          text_value: userNotes, // Salva as anotações
-          value: 0, // Não marca como completo, apenas salva as anotações
-        }, { onConflict: 'user_id,task_name,task_date' });
-
-      if (error) {
-        throw error;
-      }
-      showSuccess("Anotações salvas com sucesso!");
-      setInitialUserNotes(userNotes); // Atualiza o estado inicial das anotações
-      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] }); // Invalida para atualizar o progresso
-    } catch (error: any) {
-      showError("Erro ao salvar anotações: " + error.message);
-      console.error("Erro ao salvar anotações:", error);
-    } finally {
-      setIsSavingNotes(false);
-    }
-  };
-
-  const handleCancelNotes = () => {
-    setUserNotes(initialUserNotes); // Reverte para as anotações iniciais
   };
 
   const handleCompleteTask = async () => {
@@ -201,7 +142,7 @@ const QuickReflectionPage = () => {
           task_name: currentTaskName,
           task_date: today,
           value: 1, // Marca como completo
-          text_value: userNotes, // Salva as anotações junto com a conclusão
+          text_value: null, // Remove o campo de anotações do usuário
         }, { onConflict: 'user_id,task_name,task_date' });
 
       if (error) {
@@ -222,8 +163,6 @@ const QuickReflectionPage = () => {
       setIsCompleting(false);
     }
   };
-
-  const hasNotesChanges = userNotes !== initialUserNotes;
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -277,6 +216,14 @@ const QuickReflectionPage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{reflectionContent.text}"
               </p>
+              {reflectionContent.reflection && (
+                <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
+                  <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {reflectionContent.reflection}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -292,33 +239,6 @@ const QuickReflectionPage = () => {
         ) : (
           <ProAudioPlaceholder className="mb-4" />
         ))}
-
-        {/* Campo de anotações do usuário */}
-        <div className="space-y-4 pt-4 border-t border-muted-foreground/20">
-          <h3 className="font-bold text-lg text-primary/90">Minhas Anotações</h3>
-          <Textarea
-            placeholder="Escreva suas anotações aqui..."
-            value={userNotes}
-            onChange={(e) => setUserNotes(e.target.value)}
-            className="min-h-[120px]"
-          />
-          <div className="flex gap-2 justify-end">
-            <Button 
-              variant="outline" 
-              onClick={handleCancelNotes} 
-              disabled={!hasNotesChanges || isSavingNotes}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSaveNotes} 
-              disabled={!hasNotesChanges || isSavingNotes}
-            >
-              {isSavingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              Salvar Anotações
-            </Button>
-          </div>
-        </div>
       </div>
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
