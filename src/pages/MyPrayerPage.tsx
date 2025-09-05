@@ -19,7 +19,7 @@ const MyPrayerPage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
-  const [prayerContent, setPrayerContent] = useState<{ text: string | null; reflection: string | null; url_audio: string | null } | null>(null); // Adicionado 'reflection'
+  const [prayerContent, setPrayerContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null); // Alterado para 'auxiliar_text'
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const MyPrayerPage = () => {
       if (prayerTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, reflection, url_audio') // Adicionado 'reflection'
+          .select('text_content, auxiliar_text, url_audio') // Alterado para 'auxiliar_text'
           .eq('id', prayerTemplateId)
           .single();
 
@@ -90,7 +90,7 @@ const MyPrayerPage = () => {
         } else if (templateData) {
           setPrayerContent({ 
             text: templateData.text_content, 
-            reflection: templateData.reflection || null, // Define reflection
+            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
             url_audio: templateData.url_audio || null 
           });
         } else {
@@ -106,7 +106,7 @@ const MyPrayerPage = () => {
 
   const handleShare = () => {
     if (navigator.share && prayerContent?.text) {
-      const shareText = `Oração do Dia: "${prayerContent.text}"\n\n${prayerContent.reflection ? `Para Refletir: ${prayerContent.reflection}\n\n` : ''}Confira o app Raízes da Fé!`;
+      const shareText = `Oração do Dia: "${prayerContent.text}"\n\n${prayerContent.auxiliar_text ? `Para Refletir: ${prayerContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Oração do Dia - Raízes da Fé',
         text: shareText,
@@ -115,7 +115,7 @@ const MyPrayerPage = () => {
       .then(() => showSuccess('Oração compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Oração do Dia: "${prayerContent?.text || ''}"\n\n${prayerContent?.reflection ? `Para Refletir: ${prayerContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Oração do Dia: "${prayerContent?.text || ''}"\n\n${prayerContent?.auxiliar_text ? `Para Refletir: ${prayerContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Oração copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a oração.'));
@@ -212,11 +212,11 @@ const MyPrayerPage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{prayerContent.text}"
               </p>
-              {prayerContent.reflection && (
+              {prayerContent.auxiliar_text && (
                 <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
                   <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
-                    {prayerContent.reflection}
+                    {prayerContent.auxiliar_text}
                   </p>
                 </div>
               )}

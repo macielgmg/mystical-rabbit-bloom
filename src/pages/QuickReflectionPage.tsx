@@ -19,7 +19,7 @@ const QuickReflectionPage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [reflectionContent, setReflectionContent] = useState<{ text: string | null; reflection: string | null; url_audio: string | null } | null>(null);
+  const [reflectionContent, setReflectionContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -78,10 +78,10 @@ const QuickReflectionPage = () => {
       const reflectionTemplateId = dailyContentData?.quick_reflection;
 
       if (reflectionTemplateId) {
-        // Fetch template content, including 'reflection' field
+        // Fetch template content, including 'auxiliar_text' field
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, reflection, url_audio') // Adicionado 'reflection'
+          .select('text_content, auxiliar_text, url_audio') // Alterado para 'auxiliar_text'
           .eq('id', reflectionTemplateId)
           .single();
 
@@ -92,7 +92,7 @@ const QuickReflectionPage = () => {
         } else if (templateData) {
           setReflectionContent({ 
             text: templateData.text_content, 
-            reflection: templateData.reflection || null, // Define reflection
+            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
             url_audio: templateData.url_audio || null 
           });
         } else {
@@ -109,7 +109,7 @@ const QuickReflectionPage = () => {
 
   const handleShare = () => {
     if (navigator.share && reflectionContent?.text) {
-      const shareText = `Reflexão Rápida: "${reflectionContent.text}"\n\n${reflectionContent.reflection ? `Para Refletir: ${reflectionContent.reflection}\n\n` : ''}Confira o app Raízes da Fé!`;
+      const shareText = `Reflexão Rápida: "${reflectionContent.text}"\n\n${reflectionContent.auxiliar_text ? `Para Refletir: ${reflectionContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Reflexão Rápida - Raízes da Fé',
         text: shareText,
@@ -118,7 +118,7 @@ const QuickReflectionPage = () => {
       .then(() => showSuccess('Reflexão compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Reflexão Rápida: "${reflectionContent?.text || ''}"\n\n${reflectionContent?.reflection ? `Para Refletir: ${reflectionContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Reflexão Rápida: "${reflectionContent?.text || ''}"\n\n${reflectionContent?.auxiliar_text ? `Para Refletir: ${reflectionContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Reflexão copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a reflexão.'));
@@ -216,11 +216,11 @@ const QuickReflectionPage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{reflectionContent.text}"
               </p>
-              {reflectionContent.reflection && (
+              {reflectionContent.auxiliar_text && (
                 <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
                   <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
-                    {reflectionContent.reflection}
+                    {reflectionContent.auxiliar_text}
                   </p>
                 </div>
               )}

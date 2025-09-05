@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, X } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,13 +20,13 @@ import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
-  const { session, preferences, isPro } = useSession(); // Adicionado isPro
+  const { session, preferences, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null>(null);
+  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null>(null); // Alterado para 'auxiliar_text'
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
@@ -87,7 +87,7 @@ const DailyStudyPage = () => {
       if (studyTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, title, reflection, tags, url_audio')
+          .select('text_content, title, auxiliar_text, tags, url_audio') // Alterado para 'auxiliar_text'
           .eq('id', studyTemplateId)
           .single();
 
@@ -99,7 +99,7 @@ const DailyStudyPage = () => {
           setStudyContent({
             text: templateData.text_content,
             title: templateData.title || 'Estudo Diário',
-            reflection: templateData.reflection || null,
+            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
             tags: templateData.tags || null,
             url_audio: templateData.url_audio || null,
           });
@@ -116,7 +116,7 @@ const DailyStudyPage = () => {
 
   const handleShare = () => {
     if (navigator.share && studyContent) {
-      const shareText = `Estudo Diário: ${studyContent.title || 'Sem Título'}\n\n"${studyContent.text}"\n\n${studyContent.reflection ? `Reflexão: ${studyContent.reflection}\n\n` : ''}Confira o app Raízes da Fé!`;
+      const shareText = `Estudo Diário: ${studyContent.title || 'Sem Título'}\n\n"${studyContent.text}"\n\n${studyContent.auxiliar_text ? `Para Refletir: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Estudo Diário - Raízes da Fé',
         text: shareText,
@@ -125,7 +125,7 @@ const DailyStudyPage = () => {
       .then(() => showSuccess('Estudo compartilhado com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.reflection ? `Reflexion: ${studyContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.auxiliar_text ? `Reflexion: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Estudo copiado para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar o estudo.'));
@@ -286,11 +286,11 @@ const DailyStudyPage = () => {
                 <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                   "{studyContent.text}"
                 </p>
-                {studyContent.reflection && (
+                {studyContent.auxiliar_text && (
                   <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
                     <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
                     <p className="text-base text-muted-foreground leading-relaxed">
-                      {studyContent.reflection}
+                      {studyContent.auxiliar_text}
                     </p>
                   </div>
                 )}

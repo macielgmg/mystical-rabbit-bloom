@@ -3,17 +3,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge"; // Importar Badge
+import { Badge } from "@/components/ui/badge";
 
 interface DailyStudyCardProps {
   content: string | null;
-  reflection: string | null;
-  tags: string[] | null; // Adicionado o campo tags
+  auxiliar_text: string | null; // Alterado para auxiliar_text
+  tags: string[] | null;
   className?: string;
 }
 
-export const DailyStudyCard = ({ content, reflection, tags, className }: DailyStudyCardProps) => {
-  if (!content && !reflection && (!tags || tags.length === 0)) return null;
+export const DailyStudyCard = ({ content, auxiliar_text, tags, className }: DailyStudyCardProps) => {
+  if (!content && !auxiliar_text && (!tags || tags.length === 0)) return null;
 
   return (
     <Card className={cn("bg-gradient-to-br from-blue-100 to-blue-200 text-gray-800 shadow-lg", className)}>
@@ -29,9 +29,9 @@ export const DailyStudyCard = ({ content, reflection, tags, className }: DailySt
             "{content}"
           </p>
         )}
-        {reflection && !content && (
+        {auxiliar_text && !content && ( // Exibe auxiliar_text se não houver content
           <p className="text-lg font-serif italic line-clamp-2 leading-tight">
-            "{reflection}"
+            "{auxiliar_text}"
           </p>
         )}
         {tags && tags.length > 0 && (
