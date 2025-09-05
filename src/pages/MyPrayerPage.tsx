@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
-import { showError } from '@/utils/toast';
+import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, X } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ const MyPrayerPage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
-  const [prayerContent, setPrayerContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
+  const [prayerContent, setPrayerContent] = useState<{ text: string | null; reflection: string | null; url_audio: string | null } | null>(null); // Adicionado 'reflection'
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const MyPrayerPage = () => {
       if (prayerTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, url_audio')
+          .select('text_content, reflection, url_audio') // Adicionado 'reflection'
           .eq('id', prayerTemplateId)
           .single();
 
@@ -88,7 +88,11 @@ const MyPrayerPage = () => {
           showError("Erro ao carregar o conteúdo da oração.");
           setPrayerContent(null);
         } else if (templateData) {
-          setPrayerContent({ text: templateData.text_content, url_audio: templateData.url_audio || null });
+          setPrayerContent({ 
+            text: templateData.text_content, 
+            reflection: templateData.reflection || null, // Define reflection
+            url_audio: templateData.url_audio || null 
+          });
         } else {
           setPrayerContent(null);
         }
@@ -102,15 +106,16 @@ const MyPrayerPage = () => {
 
   const handleShare = () => {
     if (navigator.share && prayerContent?.text) {
+      const shareText = `Oração do Dia: "${prayerContent.text}"\n\n${prayerContent.reflection ? `Para Refletir: ${prayerContent.reflection}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Oração do Dia - Raízes da Fé',
-        text: `Oração do Dia: "${prayerContent.text}"\n\nConfira o app Raízes da Fé!`,
+        text: shareText,
         url: window.location.href,
       })
       .then(() => showSuccess('Oração compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Oração do Dia: "${prayerContent?.text || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Oração do Dia: "${prayerContent?.text || ''}"\n\n${prayerContent?.reflection ? `Para Refletir: ${prayerContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Oração copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a oração.'));
@@ -196,7 +201,7 @@ const MyPrayerPage = () => {
         <Progress value={dailyProgressPercentage} className="h-2.5" />
       </div>
 
-      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
+      <div className="flex-grow flex flex-col space-y-6 overflow-y-auto pb-4">
         {prayerContent?.text ? (
           <Card className="p-6 space-y-4 w-full">
             <CardHeader className="p-0 pb-2">
@@ -207,21 +212,30 @@ const MyPrayerPage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{prayerContent.text}"
               </p>
+              {prayerContent.reflection && (
+                <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
+                  <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {prayerContent.reflection}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground flex-grow flex flex-col justify-center items-center">
+            <Heart className="h-24 w-24 text-muted-foreground/50 mb-4" />
             <p className="text-lg">Nenhuma oração disponível para hoje.</p>
             <p className="text-sm">Tente novamente mais tarde ou verifique sua conexão.</p>
           </div>
         )}
-      </div>
 
-      {prayerContent?.url_audio && (isPro ? (
-        <AudioPlayer src={prayerContent.url_audio} className="mb-4" />
-      ) : (
-        <ProAudioPlaceholder className="mb-4" />
-      ))}
+        {prayerContent?.url_audio && (isPro ? (
+          <AudioPlayer src={prayerContent.url_audio} className="mb-4" />
+        ) : (
+          <ProAudioPlaceholder className="mb-4" />
+        ))}
+      </div>
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}
