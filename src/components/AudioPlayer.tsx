@@ -12,7 +12,7 @@ interface AudioPlayerProps {
   className?: string;
 }
 
-const LOADING_TIMEOUT_MS = 10000; // 10 segundos para carregar o áudio
+const LOADING_TIMEOUT_MS = 30000; // Aumentado para 30 segundos para dar mais tempo ao carregamento
 
 export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
