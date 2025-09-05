@@ -262,21 +262,23 @@ const ChapterDetail = () => {
           variant="ghost" 
           onClick={() => prevChapter ? navigate(`/study/${studyId}/chapter/${prevChapter.id}`) : null} 
           disabled={!prevChapter}
+          className="flex-1"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
         
         {/* Botão Voltar ao Estudo (para a página de detalhes do estudo) */}
-        <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)}>
+        <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)} className="flex-1">
             <BookOpen className="mr-2 h-4 w-4" />
-            Voltar ao Estudo
+            Voltar
         </Button>
         
         {/* Botão Avançar (para próximo capítulo ou finalizar) */}
         <Button 
           onClick={handleAdvance} 
           disabled={!session}
+          className="flex-1"
         >
           {nextChapter ? 'Avançar' : 'Finalizar Estudo'}
           <ArrowRight className="ml-2 h-4 w-4" />
