@@ -25,16 +25,16 @@ const WeekCalendar = () => {
           <span className="text-xs font-medium text-muted-foreground">{day.dayInitial}</span>
           <div
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full border transition-colors", // Reduzido de h-10 w-10
+              "flex h-8 w-8 items-center justify-center rounded-full border transition-colors", /* Reduzido de h-10 w-10 */
               day.isCurrentDay
                 ? "border-primary bg-primary/10 text-primary"
                 : "bg-card text-card-foreground"
             )}
           >
             {day.isCurrentDay ? (
-              <Flame className="h-4 w-4 text-orange-500" /> {/* Reduzido de h-5 w-5 */}
+              <Flame className="h-4 w-4 text-orange-500" /> /* Reduzido de h-5 w-5 */
             ) : (
-              <span className="text-xs font-semibold">{day.dayOfMonth}</span> {/* Reduzido de text-sm */}
+              <span className="text-xs font-semibold">{day.dayOfMonth}</span> /* Reduzido de text-sm */
             )}
           </div>
         </div>
