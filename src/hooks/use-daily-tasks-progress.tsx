@@ -60,7 +60,7 @@ export const useDailyTasksProgress = () => {
     enabled: !!userId,
   });
 
-  const totalDailyTasks = 5; // Diário Espiritual, Estudo Diário, Reflexão Rápida, Citação Inspiradora, Oração do Dia
+  const totalDailyTasks = 6; // Corrigido para 6 tarefas
   const completedDailyTasksCount = [
     isJournalCompleted,
     isVerseOfTheDayTaskCompleted,

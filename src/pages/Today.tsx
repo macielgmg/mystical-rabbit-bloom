@@ -363,7 +363,9 @@ const Today = () => {
           <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20"> {/* Reduzido de pt-4 */}
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
-              <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+              <span className="text-sm text-muted-foreground">
+                {completedDailyTasksCount} de {totalDailyTasks} tarefas ({dailyProgressPercentage.toFixed(0)}%)
+              </span>
             </div>
             <Progress value={dailyProgressPercentage} className="h-2.5" />
           </div>

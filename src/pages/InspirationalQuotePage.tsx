@@ -5,7 +5,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { format } from 'date-fns';
+import { format } = 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress'; // Importar Progress
@@ -148,7 +148,9 @@ const InspirationalQuotePage = () => {
       <div className="w-full space-y-2 mb-4">
         <div className="flex justify-between items-center">
           <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
-          <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+          <span className="text-sm text-muted-foreground">
+            {completedDailyTasksCount} de {totalDailyTasks} tarefas ({dailyProgressPercentage.toFixed(0)}%)
+          </span>
         </div>
         <Progress value={dailyProgressPercentage} className="h-2.5" />
       </div>
