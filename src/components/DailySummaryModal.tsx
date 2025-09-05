@@ -29,6 +29,7 @@ interface DailyContentTemplateIds {
   quick_reflection: string | null;
   inspirational_quotes: string | null;
   my_prayer: string | null;
+  completed_tasks: string[]; // Nova coluna
 }
 
 interface DailyContentActual {
@@ -39,38 +40,33 @@ interface DailyContentActual {
   my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
-interface DailyTaskProgress {
-  task_name: string;
-  value: number | null;
-  text_value: string | null;
-}
-
 // Fetch function for daily content and tasks
 const fetchDailySummary = async (userId: string, date: Date) => {
   const dateStr = format(date, 'yyyy-MM-dd');
 
-  // Fetch content template IDs for the day
-  const { data: contentIdsData, error: contentIdsError } = await supabase
+  // Fetch content template IDs and completed_tasks for the day
+  const { data: dailyContentData, error: dailyContentError } = await supabase
     .from('daily_content_for_users')
-    .select('verse_of_the_day, daily_study, quick_reflection, inspirational_quotes, my_prayer')
+    .select('verse_of_the_day, daily_study, quick_reflection, inspirational_quotes, my_prayer, completed_tasks') // Incluindo completed_tasks
     .eq('user_id', userId)
     .eq('content_date', dateStr)
     .single();
 
-  if (contentIdsError && contentIdsError.code !== 'PGRST116') {
-    throw contentIdsError;
+  if (dailyContentError && dailyContentError.code !== 'PGRST116') {
+    throw dailyContentError;
   }
 
   const contentPromises = [];
   const actualContent: Partial<DailyContentActual> = {};
+  const completedTasks: string[] = dailyContentData?.completed_tasks || [];
 
-  if (contentIdsData) {
+  if (dailyContentData) {
     const templateTypes = {
-      verse_of_the_day: contentIdsData.verse_of_the_day,
-      daily_study: contentIdsData.daily_study,
-      quick_reflection: contentIdsData.quick_reflection,
-      inspirational_quotes: contentIdsData.inspirational_quotes,
-      my_prayer: contentIdsData.my_prayer,
+      verse_of_the_day: dailyContentData.verse_of_the_day,
+      daily_study: dailyContentData.daily_study,
+      quick_reflection: dailyContentData.quick_reflection,
+      inspirational_quotes: dailyContentData.inspirational_quotes,
+      my_prayer: dailyContentData.my_prayer,
     };
 
     for (const [key, templateId] of Object.entries(templateTypes)) {
@@ -106,25 +102,11 @@ const fetchDailySummary = async (userId: string, date: Date) => {
     }
   }
 
-  // Fetch daily tasks progress for the day
-  const { data: tasksProgressData, error: tasksProgressError } = await supabase
-    .from('daily_tasks_progress')
-    .select('task_name, value, text_value')
-    .eq('user_id', userId)
-    .eq('task_date', dateStr);
-
-  if (tasksProgressError) {
-    throw tasksProgressError;
-  }
-
   await Promise.all(contentPromises); // Wait for all content fetches to complete
-
-  const taskCompletionMap = new Map<string, DailyTaskProgress>();
-  tasksProgressData?.forEach(task => taskCompletionMap.set(task.task_name, task));
 
   return {
     actualContent: actualContent as DailyContentActual,
-    taskCompletionMap,
+    completedTasks, // Retorna a lista de tarefas concluídas
   };
 };
 
@@ -147,7 +129,7 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
     { key: 'quick_reflection', label: 'Reflexão Rápida' },
     { key: 'inspirational_quotes', label: 'Citação Inspiradora' },
     { key: 'my_prayer', label: 'Oração do Dia' },
-    { key: 'verse_of_the_day', label: 'Versículo do Dia' }, // Include Verse of the Day here for completeness
+    { key: 'verse_of_the_day', label: 'Versículo do Dia' },
   ];
 
   return (
@@ -219,11 +201,11 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
                   )}
                 </div>
 
-                {/* Daily Tasks Progress Summary */}
+                {/* Daily Tasks Progress Summary (usando a nova coluna) */}
                 <h3 className="text-xl font-bold text-primary text-left mt-6 mb-2">Progresso das Tarefas</h3>
                 <div className="space-y-2">
                   {taskNames.map(task => {
-                    const isCompleted = !!data?.taskCompletionMap.get(task.key);
+                    const isCompleted = data?.completedTasks.includes(task.key);
                     return (
                       <div key={task.key} className="flex items-center gap-3 p-3 rounded-md bg-secondary/30">
                         {isCompleted ? (
@@ -235,7 +217,7 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
                       </div>
                     );
                   })}
-                  {taskNames.every(task => !data?.taskCompletionMap.has(task.key)) && (
+                  {taskNames.every(task => !data?.completedTasks.includes(task.key)) && (
                     <p className="text-sm text-muted-foreground text-center">Nenhum progresso de tarefa registrado para esta data.</p>
                   )}
                 </div>

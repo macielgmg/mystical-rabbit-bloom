@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
-import { showError } from '@/utils/toast';
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,11 +13,11 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
   const [quoteContent, setQuoteContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ const InspirationalQuotePage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   } = useDailyTasksProgress();
 
   const currentTaskName = 'inspirational_quotes';
@@ -41,7 +41,7 @@ const InspirationalQuotePage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   };
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isInspirationalQuoteTaskCompleted: true });
@@ -102,9 +102,10 @@ const InspirationalQuotePage = () => {
 
   const handleShare = () => {
     if (navigator.share && quoteContent?.text) {
+      const shareText = `Citação Inspiradora: "${quoteContent.text}"\n\nConfira o app Raízes da Fé!`;
       navigator.share({
         title: 'Citação Inspiradora - Raízes da Fé',
-        text: `Citação Inspiradora: "${quoteContent.text}"\n\nConfira o app Raízes da Fé!`,
+        text: shareText,
         url: window.location.href,
       })
       .then(() => showSuccess('Citação compartilhada com sucesso!'))
@@ -127,7 +128,8 @@ const InspirationalQuotePage = () => {
     const userId = session.user.id;
 
     try {
-      const { error } = await supabase
+      // 1. Atualizar daily_tasks_progress (mantido por enquanto)
+      const { error: progressError } = await supabase
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
@@ -136,11 +138,39 @@ const InspirationalQuotePage = () => {
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
 
-      if (error) {
-        throw error;
+      if (progressError) {
+        throw progressError;
       }
       
+      // 2. Atualizar a nova coluna completed_tasks em daily_content_for_users
+      const { data: dailyContent, error: fetchDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('completed_tasks')
+        .eq('user_id', userId)
+        .eq('content_date', today)
+        .single();
+
+      if (fetchDailyContentError && fetchDailyContentError.code !== 'PGRST116') {
+        throw fetchDailyContentError;
+      }
+
+      let updatedCompletedTasks = dailyContent?.completed_tasks || [];
+      if (!updatedCompletedTasks.includes(currentTaskName)) {
+        updatedCompletedTasks = [...updatedCompletedTasks, currentTaskName];
+      }
+
+      const { error: updateDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .update({ completed_tasks: updatedCompletedTasks })
+        .eq('user_id', userId)
+        .eq('content_date', today);
+
+      if (updateDailyContentError) {
+        throw updateDailyContentError;
+      }
+
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailySummary', userId, today] }); // Invalida o resumo diário
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
@@ -210,7 +240,8 @@ const InspirationalQuotePage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground flex-grow flex flex-col justify-center items-center">
+            <Sparkles className="h-24 w-24 text-muted-foreground/50 mb-4" />
             <p className="text-lg">Nenhuma citação disponível para hoje.</p>
             <p className="text-sm">Tente novamente mais tarde ou verifique sua conexão.</p>
           </div>

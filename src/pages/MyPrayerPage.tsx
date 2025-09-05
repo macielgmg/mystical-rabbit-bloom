@@ -13,13 +13,13 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const MyPrayerPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [prayerContent, setPrayerContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null); // Alterado para 'auxiliar_text'
+  const [prayerContent, setPrayerContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -32,7 +32,7 @@ const MyPrayerPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   } = useDailyTasksProgress();
 
   const currentTaskName = 'my_prayer';
@@ -41,11 +41,11 @@ const MyPrayerPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   };
 
-  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isMyPrayerTaskCompleted: true });
-  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isMyPrayerTaskCompleted: true });
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isMyPrayerCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isMyPrayerCompleted: true });
   const previousTaskPath = getPreviousTaskPath(currentTaskName);
   const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
@@ -79,7 +79,7 @@ const MyPrayerPage = () => {
       if (prayerTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, auxiliar_text, url_audio') // Alterado para 'auxiliar_text'
+          .select('text_content, auxiliar_text, url_audio')
           .eq('id', prayerTemplateId)
           .single();
 
@@ -90,7 +90,7 @@ const MyPrayerPage = () => {
         } else if (templateData) {
           setPrayerContent({ 
             text: templateData.text_content, 
-            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
+            auxiliar_text: templateData.auxiliar_text || null,
             url_audio: templateData.url_audio || null 
           });
         } else {
@@ -132,7 +132,8 @@ const MyPrayerPage = () => {
     const userId = session.user.id;
 
     try {
-      const { error } = await supabase
+      // 1. Atualizar daily_tasks_progress (mantido por enquanto)
+      const { error: progressError } = await supabase
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
@@ -141,11 +142,39 @@ const MyPrayerPage = () => {
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
 
-      if (error) {
-        throw error;
+      if (progressError) {
+        throw progressError;
       }
       
+      // 2. Atualizar a nova coluna completed_tasks em daily_content_for_users
+      const { data: dailyContent, error: fetchDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('completed_tasks')
+        .eq('user_id', userId)
+        .eq('content_date', today)
+        .single();
+
+      if (fetchDailyContentError && fetchDailyContentError.code !== 'PGRST116') {
+        throw fetchDailyContentError;
+      }
+
+      let updatedCompletedTasks = dailyContent?.completed_tasks || [];
+      if (!updatedCompletedTasks.includes(currentTaskName)) {
+        updatedCompletedTasks = [...updatedCompletedTasks, currentTaskName];
+      }
+
+      const { error: updateDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .update({ completed_tasks: updatedCompletedTasks })
+        .eq('user_id', userId)
+        .eq('content_date', today);
+
+      if (updateDailyContentError) {
+        throw updateDailyContentError;
+      }
+
       queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailySummary', userId, today] }); // Invalida o resumo diário
       
       if (nextTaskPath) {
         navigate(nextTaskPath);

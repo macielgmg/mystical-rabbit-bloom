@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,11 +13,11 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ const VerseOfTheDayPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   } = useDailyTasksProgress();
 
   const currentTaskName = 'verse_of_the_day';
@@ -41,7 +41,7 @@ const VerseOfTheDayPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
+    isMyPrayerCompleted,
   };
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
@@ -134,7 +134,8 @@ const VerseOfTheDayPage = () => {
     const userId = session.user.id;
 
     try {
-      const { error } = await supabase
+      // 1. Atualizar daily_tasks_progress (mantido por enquanto)
+      const { error: progressError } = await supabase
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
@@ -143,11 +144,39 @@ const VerseOfTheDayPage = () => {
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
 
-      if (error) {
-        throw error;
+      if (progressError) {
+        throw progressError;
       }
       
+      // 2. Atualizar a nova coluna completed_tasks em daily_content_for_users
+      const { data: dailyContent, error: fetchDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('completed_tasks')
+        .eq('user_id', userId)
+        .eq('content_date', today)
+        .single();
+
+      if (fetchDailyContentError && fetchDailyContentError.code !== 'PGRST116') {
+        throw fetchDailyContentError;
+      }
+
+      let updatedCompletedTasks = dailyContent?.completed_tasks || [];
+      if (!updatedCompletedTasks.includes(currentTaskName)) {
+        updatedCompletedTasks = [...updatedCompletedTasks, currentTaskName];
+      }
+
+      const { error: updateDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .update({ completed_tasks: updatedCompletedTasks })
+        .eq('user_id', userId)
+        .eq('content_date', today);
+
+      if (updateDailyContentError) {
+        throw updateDailyContentError;
+      }
+
       queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailySummary', userId, today] }); // Invalida o resumo diário
       
       if (nextTaskPath) {
         navigate(nextTaskPath);

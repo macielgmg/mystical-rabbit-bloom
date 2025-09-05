@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Loader2, CheckCircle, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, CheckCircle, X } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils'; // Importar cn para combinar classes
+import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -20,6 +21,7 @@ const sliderLabels = [
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
+  const queryClient = useQueryClient(); // Inicializar queryClient
   const [spiritualState, setSpiritualState] = useState([4]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,21 +81,54 @@ const SpiritualJournalPage = () => {
     }
     setIsSaving(true);
     const today = format(new Date(), 'yyyy-MM-dd');
+    const userId = session.user.id;
     const newValue = spiritualState[0];
 
     try {
-      const { error } = await supabase
+      // 1. Atualizar daily_tasks_progress (mantido por enquanto)
+      const { error: progressError } = await supabase
         .from('daily_tasks_progress')
         .upsert({
-          user_id: session.user.id,
+          user_id: userId,
           task_name: currentTaskName,
           task_date: today,
           value: newValue,
         }, { onConflict: 'user_id,task_name,task_date' });
 
-      if (error) {
-        throw error;
+      if (progressError) {
+        throw progressError;
       }
+
+      // 2. Atualizar a nova coluna completed_tasks em daily_content_for_users
+      const { data: dailyContent, error: fetchDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('completed_tasks')
+        .eq('user_id', userId)
+        .eq('content_date', today)
+        .single();
+
+      if (fetchDailyContentError && fetchDailyContentError.code !== 'PGRST116') {
+        throw fetchDailyContentError;
+      }
+
+      let updatedCompletedTasks = dailyContent?.completed_tasks || [];
+      if (!updatedCompletedTasks.includes(currentTaskName)) {
+        updatedCompletedTasks = [...updatedCompletedTasks, currentTaskName];
+      }
+
+      const { error: updateDailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .update({ completed_tasks: updatedCompletedTasks })
+        .eq('user_id', userId)
+        .eq('content_date', today);
+
+      if (updateDailyContentError) {
+        throw updateDailyContentError;
+      }
+      
+      // Invalida as queries relevantes para que o estado seja atualizado
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailySummary', userId, today] }); // Invalida o resumo diário
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
