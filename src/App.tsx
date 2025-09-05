@@ -1,3 +1,4 @@
+import React from "react"; // Adicionado explicitamente
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,6 +31,7 @@ import InspirationalQuotePage from "./pages/InspirationalQuotePage";
 import MyPrayerPage from "./pages/MyPrayerPage";
 import AboutAppPage from "./pages/AboutAppPage";
 import AccountSecurityPage from "./pages/AccountSecurityPage"; // Import AccountSecurityPage
+import DailyHistoryPage from "./pages/DailyHistoryPage"; // Import DailyHistoryPage
 
 
 const queryClient = new QueryClient();
