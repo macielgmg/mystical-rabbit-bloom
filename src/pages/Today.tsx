@@ -12,7 +12,7 @@ import { VerseOfTheDay } from '@/components/VerseOfTheDay';
 import { QuickReflectionTask } from '@/components/QuickReflectionTask';
 import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask';
 import { MyPrayerTask } from '@/components/MyPrayerTask';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay, parseISO, startOfWeek, addDays } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
@@ -26,15 +26,16 @@ interface DailyContentTemplateIds {
   inspirational_quotes: string | null;
   my_prayer: string | null;
   updated_at: string;
+  content_date: string; // Adicionado para facilitar a verificação de datas
 }
 
 // Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
-  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null; // Alterado para auxiliar_text
-  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Alterado para auxiliar_text
+  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
+  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
   inspirational_quotes: { text: string | null; url_audio: string | null } | null;
-  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Alterado para auxiliar_text
+  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
 interface DailyContentTemplate {
@@ -43,7 +44,7 @@ interface DailyContentTemplate {
   title: string | null;
   text_content: string;
   reference: string | null;
-  auxiliar_text: string | null; // Alterado para auxiliar_text
+  auxiliar_text: string | null;
   tags: string[] | null;
   explanation: string | null;
   url_audio: string | null;
@@ -83,6 +84,7 @@ const Today = () => {
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
+  const [datesWithDailyContent, setDatesWithDailyContent] = useState<Set<string>>(new Set()); // Novo estado
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -124,6 +126,7 @@ const Today = () => {
     if (!session?.user) {
       setLoadingDailyContent(false);
       setActualDailyContent(null);
+      setDatesWithDailyContent(new Set()); // Limpa o estado
       return;
     }
 
@@ -131,6 +134,29 @@ const Today = () => {
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     const userId = session.user.id;
+
+    // --- Lógica para buscar conteúdo da semana para o calendário ---
+    const weekStartsOn = 0; // 0 para Domingo
+    const startOfWeekDate = startOfWeek(today, { weekStartsOn });
+    const weekDates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      weekDates.push(format(addDays(startOfWeekDate, i), 'yyyy-MM-dd'));
+    }
+
+    const { data: weekContentData, error: weekContentError } = await supabase
+      .from('daily_content_for_users')
+      .select('content_date')
+      .eq('user_id', userId)
+      .in('content_date', weekDates);
+
+    if (weekContentError) {
+      console.error("Erro ao buscar conteúdo da semana para o calendário:", weekContentError);
+    } else if (weekContentData) {
+      const dates = new Set(weekContentData.map(item => item.content_date));
+      setDatesWithDailyContent(dates);
+    }
+    // --- Fim da lógica para buscar conteúdo da semana ---
+
 
     let currentDailyContentIds: DailyContentTemplateIds | null = null;
 
@@ -231,7 +257,7 @@ const Today = () => {
         if (templateId) {
           contentPromises.push(
             supabase.from('daily_content_templates')
-              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio') // Alterado para 'auxiliar_text'
+              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
               .eq('id', templateId)
               .single()
               .then(({ data, error }) => {
@@ -243,11 +269,11 @@ const Today = () => {
                   return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
                 }
                 if (key === 'daily_study' && data) {
-                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null }; // Alterado para auxiliar_text
+                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
                 }
                 // Para quick_reflection, inspirational_quotes, my_prayer, retornamos um objeto com text_content e url_audio
                 if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(key) && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null }; // Alterado para auxiliar_text
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                 }
                 return null; // Fallback
               })
@@ -359,7 +385,7 @@ const Today = () => {
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-          <WeekCalendar />
+          <WeekCalendar datesWithDailyContent={datesWithDailyContent} /> {/* Passa o novo prop */}
           {/* Indicador de Progresso Diário */}
           <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
