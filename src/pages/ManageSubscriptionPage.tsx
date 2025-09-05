@@ -26,7 +26,7 @@ const ManageSubscriptionPage = () => {
 
   const proBenefits = [
     { icon: BookOpen, text: "Acesso ilimitado a todos os estudos premium." },
-    { icon: Headphones, text: "Conteúdo diário exclusivo e personalizado, incluindo áudios." }, {/* Atualizado para incluir áudio */}
+    { icon: Headphones, text: "Conteúdo diário exclusivo e personalizado, incluindo áudios." }, // Atualizado para incluir áudio
     { icon: TrendingUp, text: "Ferramentas avançadas de acompanhamento de progresso." },
     { icon: Gem, text: "Novos recursos e estudos adicionados mensalmente." },
   ];
