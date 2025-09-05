@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge"; // Importar Badge
+import { checkAndAwardAchievements } from '@/utils/achievements'; // Importar a função de verificação de conquistas
+import { showAchievementToast } from '@/utils/toast'; // Importar o toast de conquista
 
 // --- Tipos e Componentes (sem alteração) ---
 
@@ -118,6 +120,19 @@ const Profile = () => {
     queryFn: () => fetchProfileData(session!.user!.id),
     enabled: !!session?.user,
   });
+
+  // Efeito para verificar conquistas ao carregar a página de perfil
+  useEffect(() => {
+    const checkAchievementsOnLoad = async () => {
+      if (session?.user && !loading) { // Garante que a sessão e os dados básicos já foram carregados
+        const newAchievements = await checkAndAwardAchievements(session.user.id, null); // Passa null para studyId
+        newAchievements.forEach((ach, index) => {
+          setTimeout(() => showAchievementToast(ach), index * 700);
+        });
+      }
+    };
+    checkAchievementsOnLoad();
+  }, [session, loading]); // Depende da sessão e do estado de carregamento inicial
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

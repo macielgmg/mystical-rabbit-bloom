@@ -9,7 +9,7 @@ interface Achievement {
 }
 
 // A função agora não precisa mais do total de capítulos, ela mesma calcula.
-export const checkAndAwardAchievements = async (userId: string, studyId: string): Promise<Achievement[]> => {
+export const checkAndAwardAchievements = async (userId: string, studyId?: string | null): Promise<Achievement[]> => {
   try {
     // 1. Busca todos os dados necessários do Supabase.
     const [
@@ -49,14 +49,16 @@ export const checkAndAwardAchievements = async (userId: string, studyId: string)
     if (totalCompletedChapters >= 50) award('Sábio Estudante');
     if (totalCompletedChapters >= 150) award('Mestre da Palavra');
 
-    // B) Conquistas baseadas na CONCLUSÃO DE ESTUDOS específicos.
-    const study = localStudies.find(s => s.id === studyId);
-    if (study) {
-      const studyChapterIds = new Set(study.chapters.map(c => c.id));
-      const completedChapterIdsForThisStudy = userProgressData?.map(p => p.chapter_id).filter(id => studyChapterIds.has(id)) || [];
-      
-      if (completedChapterIdsForThisStudy.length === study.chapters.length) {
-        award('Primeiro Estudo');
+    // B) Conquistas baseadas na CONCLUSÃO DE ESTUDOS específicos (apenas se studyId for fornecido).
+    if (studyId) {
+      const study = localStudies.find(s => s.id === studyId);
+      if (study) {
+        const studyChapterIds = new Set(study.chapters.map(c => c.id));
+        const completedChapterIdsForThisStudy = userProgressData?.map(p => p.chapter_id).filter(id => studyChapterIds.has(id)) || [];
+        
+        if (completedChapterIdsForThisStudy.length === study.chapters.length) {
+          award('Primeiro Estudo'); // Esta conquista é para completar um estudo inteiro
+        }
       }
     }
 
