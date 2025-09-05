@@ -123,13 +123,13 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
 
   if (!date) return null;
 
-  const taskNames = [
+  // Lista de tarefas que devem aparecer no resumo de progresso (excluindo o Versículo do Dia)
+  const taskNamesForProgressSummary = [
     { key: 'spiritual_journal', label: 'Diário Espiritual' },
     { key: 'daily_study', label: 'Estudo Diário' },
     { key: 'quick_reflection', label: 'Reflexão Rápida' },
     { key: 'inspirational_quotes', label: 'Citação Inspiradora' },
     { key: 'my_prayer', label: 'Oração do Dia' },
-    { key: 'verse_of_the_day', label: 'Versículo do Dia' },
   ];
 
   return (
@@ -204,7 +204,7 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
                 {/* Daily Tasks Progress Summary (usando a nova coluna) */}
                 <h3 className="text-xl font-bold text-primary text-left mt-6 mb-2">Progresso das Tarefas</h3>
                 <div className="space-y-2">
-                  {taskNames.map(task => {
+                  {taskNamesForProgressSummary.map(task => {
                     const isCompleted = data?.completedTasks.includes(task.key);
                     return (
                       <div key={task.key} className="flex items-center gap-3 p-3 rounded-md bg-secondary/30">
@@ -217,7 +217,7 @@ export const DailySummaryModal = ({ date, onClose }: DailySummaryModalProps) => 
                       </div>
                     );
                   })}
-                  {taskNames.every(task => !data?.completedTasks.includes(task.key)) && (
+                  {taskNamesForProgressSummary.every(task => !data?.completedTasks.includes(task.key)) && (
                     <p className="text-sm text-muted-foreground text-center">Nenhum progresso de tarefa registrado para esta data.</p>
                   )}
                 </div>

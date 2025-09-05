@@ -95,7 +95,7 @@ const Today = () => {
     dailyProgressPercentage, 
     isLoadingAnyDailyTask,
     isJournalCompleted,
-    isVerseOfTheDayTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Mantido para o componente VerseOfTheDayTask, mas não para o progresso geral
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,

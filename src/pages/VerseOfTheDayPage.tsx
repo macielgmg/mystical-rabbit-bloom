@@ -21,7 +21,8 @@ const VerseOfTheDayPage = () => {
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isCompleting, setIsCompleting] = useState(false);
+  // isCompleting não é mais necessário para o Versículo do Dia, mas mantido para consistência de UI se o botão for reusado.
+  const [isCompleting, setIsCompleting] = useState(false); 
 
   const { 
     completedDailyTasksCount, 
@@ -32,22 +33,27 @@ const VerseOfTheDayPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerCompleted,
+    isMyPrayerTaskCompleted, // Corrigido para isMyPrayerTaskCompleted
   } = useDailyTasksProgress();
 
-  const currentTaskName = 'verse_of_the_day';
+  const currentTaskName = 'verse_of_the_day'; // Mantido para referência, mas não é uma tarefa na sequência
   const completionStatus = {
     isJournalCompleted,
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerCompleted,
+    isMyPrayerTaskCompleted,
   };
 
-  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
-  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
-  const previousTaskPath = getPreviousTaskPath(currentTaskName);
-  const isFirstTask = isFirstTaskInSequence(currentTaskName);
+  // A lógica de isLastTask e nextTaskPath agora se baseia na `dailyTaskSequence` sem o versículo.
+  // Para o Versículo do Dia, o "próximo" é a primeira tarefa real da sequência.
+  const firstRealTaskPath = getNextIncompleteTaskPath('start_of_day', completionStatus); // 'start_of_day' é um placeholder
+  const nextPath = firstRealTaskPath || '/today'; // Se não houver tarefas, volta para /today
+
+  // O Versículo do Dia não é uma tarefa na sequência, então não tem "anterior" ou "última tarefa" no mesmo sentido.
+  // O botão "Voltar" deve ir para a página "Hoje".
+  const previousTaskPath = '/today'; 
+  const isFirstTask = true; // Consideramos o Versículo do Dia como o "primeiro" item do dia, mas não uma tarefa.
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -124,71 +130,9 @@ const VerseOfTheDayPage = () => {
     }
   };
 
-  const handleCompleteTask = async () => {
-    if (!session) {
-      showError("Você precisa estar logado para finalizar.");
-      return;
-    }
-    setIsCompleting(true);
-    const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
-
-    try {
-      // 1. Atualizar daily_tasks_progress (mantido por enquanto)
-      const { error: progressError } = await supabase
-        .from('daily_tasks_progress')
-        .upsert({
-          user_id: userId,
-          task_name: currentTaskName,
-          task_date: today,
-          value: 1,
-        }, { onConflict: 'user_id,task_name,task_date' });
-
-      if (progressError) {
-        throw progressError;
-      }
-      
-      // 2. Atualizar a nova coluna completed_tasks em daily_content_for_users
-      const { data: dailyContent, error: fetchDailyContentError } = await supabase
-        .from('daily_content_for_users')
-        .select('completed_tasks')
-        .eq('user_id', userId)
-        .eq('content_date', today)
-        .single();
-
-      if (fetchDailyContentError && fetchDailyContentError.code !== 'PGRST116') {
-        throw fetchDailyContentError;
-      }
-
-      let updatedCompletedTasks = dailyContent?.completed_tasks || [];
-      if (!updatedCompletedTasks.includes(currentTaskName)) {
-        updatedCompletedTasks = [...updatedCompletedTasks, currentTaskName];
-      }
-
-      const { error: updateDailyContentError } = await supabase
-        .from('daily_content_for_users')
-        .update({ completed_tasks: updatedCompletedTasks })
-        .eq('user_id', userId)
-        .eq('content_date', today);
-
-      if (updateDailyContentError) {
-        throw updateDailyContentError;
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
-      queryClient.invalidateQueries({ queryKey: ['dailySummary', userId, today] }); // Invalida o resumo diário
-      
-      if (nextTaskPath) {
-        navigate(nextTaskPath);
-      } else {
-        navigate('/today');
-      }
-    } catch (error: any) {
-      showError("Erro ao finalizar o versículo: " + error.message);
-      console.error("Erro ao finalizar versículo:", error);
-    } finally {
-      setIsCompleting(false);
-    }
+  const handleContinue = () => {
+    // O Versículo do Dia não é uma tarefa, então apenas navega para a próxima etapa.
+    navigate(nextPath);
   };
 
   if (loading || isLoadingAnyDailyTask) {
@@ -221,7 +165,7 @@ const VerseOfTheDayPage = () => {
         </Button>
       </header>
 
-      {/* Indicador de Progresso Diário */}
+      {/* Indicador de Progresso Diário (ainda exibido, mas o Versículo não contribui para ele) */}
       <div className="w-full space-y-2 mb-4">
         <div className="flex justify-between items-center">
           <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
@@ -269,28 +213,25 @@ const VerseOfTheDayPage = () => {
           <Share2 className="h-4 w-4" />
         </Button>
 
-        {/* Back Button (conditional) */}
-        {!isFirstTask && previousTaskPath && (
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(previousTaskPath)} 
-            className="flex-1"
-            disabled={isCompleting}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
-          </Button>
-        )}
-
-        {/* Continue/Finalize Button */}
+        {/* Back Button (sempre volta para /today, pois não faz parte da sequência de tarefas) */}
         <Button 
-          onClick={handleCompleteTask} 
-          className={cn("flex-1", isFirstTask ? "w-full" : "")}
+          variant="outline" 
+          onClick={() => navigate('/today')} 
+          className="flex-1"
+          disabled={isCompleting}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+        </Button>
+
+        {/* Continue Button (agora apenas navega) */}
+        <Button 
+          onClick={handleContinue} 
+          className="flex-1"
           disabled={isCompleting || !verseContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
             <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+              Continuar <ArrowRight className="h-4 w-4 ml-2" />
             </>
           )}
         </Button>

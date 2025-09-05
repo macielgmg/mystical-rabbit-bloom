@@ -8,16 +8,15 @@ import { format } from 'date-fns';
 // Funções para buscar o status de cada tarefa
 const fetchTaskStatus = async (userId: string, taskName: string) => {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
+  const { data: dailyContent, error } = await supabase
+    .from('daily_content_for_users')
+    .select('completed_tasks')
     .eq('user_id', userId)
-    .eq('task_name', taskName)
-    .eq('task_date', todayStr)
+    .eq('content_date', todayStr)
     .single();
   
   if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
+  return dailyContent?.completed_tasks?.includes(taskName) || false;
 };
 
 export const useDailyTasksProgress = () => {
@@ -31,6 +30,7 @@ export const useDailyTasksProgress = () => {
   });
 
   // O Versículo do Dia não será mais contado no progresso da "Jornada Diária"
+  // Mantemos o status para que o componente VerseOfTheDayTask possa usá-lo, mas não para o progresso geral.
   const { data: isVerseOfTheDayTaskCompleted, isLoading: loadingVerseOfTheDayTask } = useQuery({
     queryKey: ['verseOfTheDayTaskStatus', userId],
     queryFn: () => fetchTaskStatus(userId!, 'verse_of_the_day'),
