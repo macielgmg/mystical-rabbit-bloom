@@ -124,7 +124,7 @@ const DailyStudyPage = () => {
       .then(() => showSuccess('Estudo compartilhado com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.reflection ? `Reflexão: ${studyContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.reflection ? `Reflexion: ${studyContent.reflection}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Estudo copiado para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar o estudo.'));

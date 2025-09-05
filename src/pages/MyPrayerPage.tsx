@@ -216,6 +216,10 @@ const MyPrayerPage = () => {
         )}
       </div>
 
+      {prayerContent?.url_audio && (
+        <AudioPlayer src={prayerContent.url_audio} className="mb-4" />
+      )}
+
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}
         <Button 
