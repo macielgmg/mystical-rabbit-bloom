@@ -256,9 +256,13 @@ const DailyHistoryPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-4">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 p-1 rounded-lg bg-secondary/50 mb-4"> {/* Adicionado p-1, rounded-lg, bg-secondary/50 */}
           {availableTabs.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id} 
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-md text-xs sm:text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm transition-all" // Estilização aprimorada
+            >
               {getTaskCompletionIcon(tab.id)}
               <tab.icon className="h-4 w-4" />
               {tab.label}
@@ -267,7 +271,7 @@ const DailyHistoryPage = () => {
         </TabsList>
         <div className="flex-grow overflow-y-auto">
           {availableTabs.map(tab => (
-            <TabsContent key={tab.id} value={tab.id} className="mt-0">
+            <TabsContent key={tab.id} value={tab.id} className="mt-4"> {/* Adicionado mt-4 para espaçamento */}
               <Card className="p-4 space-y-2">
                 <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
