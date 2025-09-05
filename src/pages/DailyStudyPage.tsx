@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { AudioPlayer } from '@/components/AudioPlayer';
 
 const DailyStudyPage = () => {
@@ -53,6 +53,8 @@ const DailyStudyPage = () => {
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isDailyStudyTaskCompleted: true });
   const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isDailyStudyTaskCompleted: true });
+  const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchStudy = async () => {
@@ -343,19 +345,34 @@ const DailyStudyPage = () => {
         )}
       </div>
 
-      <div className="flex justify-between items-center py-4 gap-4 flex-shrink-0">
+      <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
+        {/* Share Button */}
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          size="sm"
-          className="flex-1"
+          size="icon" 
+          className="h-10 w-10 flex-shrink-0"
           disabled={!studyContent}
         >
-          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+          <Share2 className="h-4 w-4" />
         </Button>
+
+        {/* Back Button (conditional) */}
+        {!isFirstTask && previousTaskPath && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(previousTaskPath)} 
+            className="flex-1"
+            disabled={isCompleting}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          </Button>
+        )}
+
+        {/* Continue/Finalize Button */}
         <Button 
           onClick={handleCompleteTask} 
-          className="flex-1"
+          className={cn("flex-1", isFirstTask ? "w-full" : "")}
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (

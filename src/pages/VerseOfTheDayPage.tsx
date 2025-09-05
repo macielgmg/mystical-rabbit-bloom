@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
@@ -19,8 +20,33 @@ const VerseOfTheDayPage = () => {
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
 
-  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
+
+  const currentTaskName = 'verse_of_the_day';
+  const completionStatus = {
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  };
+
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
+  const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -97,6 +123,44 @@ const VerseOfTheDayPage = () => {
     }
   };
 
+  const handleCompleteTask = async () => {
+    if (!session) {
+      showError("Você precisa estar logado para finalizar.");
+      return;
+    }
+    setIsCompleting(true);
+    const today = new Date().toISOString().split('T')[0];
+    const userId = session.user.id;
+
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: userId,
+          task_name: currentTaskName,
+          task_date: today,
+          value: 1,
+        }, { onConflict: 'user_id,task_name,task_date' });
+
+      if (error) {
+        throw error;
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
+    } catch (error: any) {
+      showError("Erro ao finalizar o versículo: " + error.message);
+      console.error("Erro ao finalizar versículo:", error);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   if (loading || isLoadingAnyDailyTask) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -157,24 +221,42 @@ const VerseOfTheDayPage = () => {
         )}
       </div>
 
-      <div className="flex justify-center items-center py-4 gap-4">
-        {verseContent?.url_audio && (
-          <AudioPlayer src={verseContent.url_audio} className="flex-1" />
-        )}
+      <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
+        {/* Share Button */}
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          size="sm"
-          className={cn("w-fit px-3", !verseContent?.url_audio && "flex-1")}
+          size="icon" 
+          className="h-10 w-10 flex-shrink-0"
           disabled={!verseContent}
         >
-          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+          <Share2 className="h-4 w-4" />
         </Button>
+
+        {/* Back Button (conditional) */}
+        {!isFirstTask && previousTaskPath && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(previousTaskPath)} 
+            className="flex-1"
+            disabled={isCompleting}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          </Button>
+        )}
+
+        {/* Continue/Finalize Button */}
         <Button 
-          onClick={() => navigate('/today')} 
-          className={cn("flex-1", verseContent?.url_audio && "ml-auto")}
+          onClick={handleCompleteTask} 
+          className={cn("flex-1", isFirstTask ? "w-full" : "")}
+          disabled={isCompleting || !verseContent}
         >
-          Voltar para Hoje
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+            </>
+          )}
         </Button>
       </div>
     </div>

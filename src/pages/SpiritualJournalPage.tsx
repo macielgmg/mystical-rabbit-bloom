@@ -9,7 +9,8 @@ import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
+import { cn } from '@/lib/utils'; // Importar cn para combinar classes
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -46,6 +47,7 @@ const SpiritualJournalPage = () => {
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true });
   const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true });
+  const isFirstTask = isFirstTaskInSequence(currentTaskName); // Deve ser true para esta página
 
   useEffect(() => {
     const fetchInitialState = async () => {
@@ -163,9 +165,13 @@ const SpiritualJournalPage = () => {
         </div>
       </div>
 
-      <div className="pt-4">
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+      <div className="flex justify-end items-center py-4 gap-2 flex-shrink-0"> {/* Apenas o botão de continuar */}
+        <Button 
+          onClick={handleSave} 
+          className="flex-1 w-full"
+          disabled={isSaving}
+        >
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />
               {isLastTask ? "Finalizar Jornada" : "Continuar"}

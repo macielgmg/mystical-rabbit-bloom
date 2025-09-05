@@ -48,3 +48,15 @@ export const isLastTaskInSequenceAndAllCompleted = (
   // Se a tarefa atual é a última na sequência E todas as tarefas estão completas
   return currentTaskIndex === dailyTaskSequence.length - 1 && allTasksCompleted;
 };
+
+export const isFirstTaskInSequence = (currentTaskName: string): boolean => {
+  return dailyTaskSequence[0].name === currentTaskName;
+};
+
+export const getPreviousTaskPath = (currentTaskName: string): string | null => {
+  const currentTaskIndex = dailyTaskSequence.findIndex(task => task.name === currentTaskName);
+  if (currentTaskIndex > 0) {
+    return dailyTaskSequence[currentTaskIndex - 1].path;
+  }
+  return null; // Não há tarefa anterior
+};

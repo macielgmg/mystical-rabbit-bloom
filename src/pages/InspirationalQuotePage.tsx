@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 
@@ -45,6 +45,8 @@ const InspirationalQuotePage = () => {
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isInspirationalQuoteTaskCompleted: true });
   const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isInspirationalQuoteTaskCompleted: true });
+  const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -214,22 +216,34 @@ const InspirationalQuotePage = () => {
         )}
       </div>
 
-      <div className="flex justify-between items-center py-4 gap-4">
-        {quoteContent?.url_audio && (
-          <AudioPlayer src={quoteContent.url_audio} className="flex-1" />
-        )}
+      <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
+        {/* Share Button */}
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          size="sm"
-          className={cn("w-fit px-3", !quoteContent?.url_audio && "flex-1")}
+          size="icon" 
+          className="h-10 w-10 flex-shrink-0"
           disabled={!quoteContent?.text}
         >
           <Share2 className="h-4 w-4" />
         </Button>
+
+        {/* Back Button (conditional) */}
+        {!isFirstTask && previousTaskPath && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(previousTaskPath)} 
+            className="flex-1"
+            disabled={isCompleting}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          </Button>
+        )}
+
+        {/* Continue/Finalize Button */}
         <Button 
           onClick={handleCompleteTask} 
-          className={cn("flex-1", quoteContent?.url_audio && "ml-auto")}
+          className={cn("flex-1", isFirstTask ? "w-full" : "")}
           disabled={isCompleting || !quoteContent?.text}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
