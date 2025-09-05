@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, Headphones } from 'lucide-react'; // Adicionado Headphones
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,13 +18,14 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
+import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
   const { session, preferences } = useSession();
   const queryClient = useQueryClient();
-  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null>(null); // Adicionado url_audio
+  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
@@ -63,7 +64,6 @@ const DailyStudyPage = () => {
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const userId = session.user.id;
 
-      // 1. Buscar o ID do template do estudo diário para o usuário e data atual
       const { data: dailyContentData, error: dailyContentError } = await supabase
         .from('daily_content_for_users')
         .select('daily_study')
@@ -82,10 +82,9 @@ const DailyStudyPage = () => {
       const studyTemplateId = dailyContentData?.daily_study;
 
       if (studyTemplateId) {
-        // 2. Usar o ID do template para buscar o conteúdo real do template
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, title, reflection, tags, url_audio') // Adicionado url_audio
+          .select('text_content, title, reflection, tags, url_audio')
           .eq('id', studyTemplateId)
           .single();
 
@@ -99,7 +98,7 @@ const DailyStudyPage = () => {
             title: templateData.title || 'Estudo Diário',
             reflection: templateData.reflection || null,
             tags: templateData.tags || null,
-            url_audio: templateData.url_audio || null, // Definido url_audio
+            url_audio: templateData.url_audio || null,
           });
         } else {
           setStudyContent(null);
@@ -168,7 +167,6 @@ const DailyStudyPage = () => {
     }
   };
 
-  // Função para obter os labels das tags a partir das preferências do usuário
   const getUserPreferencesLabels = () => {
     if (!preferences) return [];
     try {
@@ -206,7 +204,6 @@ const DailyStudyPage = () => {
 
   const userInterests = getUserPreferencesLabels();
 
-  // Função para truncar o texto da tag
   const truncateTag = (tag: string, maxLength: number) => {
     if (tag.length > maxLength) {
       return tag.substring(0, maxLength - 3) + '...';
@@ -291,6 +288,10 @@ const DailyStudyPage = () => {
               </CardContent>
             </Card>
 
+            {studyContent.url_audio && (
+              <AudioPlayer src={studyContent.url_audio} className="mb-4" />
+            )}
+
             {/* Seção "Por que este estudo?" agora colapsável e menor */}
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="why-this-study" className="border-none">
@@ -337,28 +338,18 @@ const DailyStudyPage = () => {
       </div>
 
       <div className="flex justify-between items-center py-4 gap-4 flex-shrink-0">
-        {studyContent?.url_audio && (
-          <Button 
-            variant="outline" 
-            onClick={() => window.open(studyContent.url_audio!, '_blank')} 
-            size="sm"
-            className="w-fit px-3"
-          >
-            <Headphones className="h-4 w-4 mr-2" /> Ouvir
-          </Button>
-        )}
         <Button 
           variant="outline" 
           onClick={handleShare} 
           size="sm"
-          className={cn("w-fit px-3", !studyContent?.url_audio && "flex-1")} // Ajusta largura se não houver botão de áudio
+          className="flex-1"
           disabled={!studyContent}
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
         </Button>
         <Button 
           onClick={handleCompleteTask} 
-          className={cn("flex-1", studyContent?.url_audio && "ml-auto")} // Ajusta margem se houver botão de áudio
+          className="flex-1"
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (

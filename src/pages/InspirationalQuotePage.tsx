@@ -3,21 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, Headphones } from 'lucide-react'; // Adicionado Headphones
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
-import { cn } from '@/lib/utils'; // Importar cn
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
+import { cn } from '@/lib/utils';
+import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
   const queryClient = useQueryClient();
-  const [quoteContent, setQuoteContent] = useState<{ text: string | null; url_audio: string | null } | null>(null); // Adicionado url_audio
+  const [quoteContent, setQuoteContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -75,7 +76,7 @@ const InspirationalQuotePage = () => {
       if (quoteTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, url_audio') // Adicionado url_audio
+          .select('text_content, url_audio')
           .eq('id', quoteTemplateId)
           .single();
 
@@ -207,14 +208,7 @@ const InspirationalQuotePage = () => {
 
       <div className="flex justify-between items-center py-4 gap-4">
         {quoteContent?.url_audio && (
-          <Button 
-            variant="outline" 
-            onClick={() => window.open(quoteContent.url_audio!, '_blank')} 
-            size="sm"
-            className="w-fit px-3"
-          >
-            <Headphones className="h-4 w-4 mr-2" /> Ouvir
-          </Button>
+          <AudioPlayer src={quoteContent.url_audio} className="flex-1" />
         )}
         <Button 
           variant="outline" 
