@@ -8,8 +8,9 @@ import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Importar Progress
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
 
 const MyPrayerPage = () => {
   const navigate = useNavigate();
@@ -19,7 +20,29 @@ const MyPrayerPage = () => {
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
+
+  const currentTaskName = 'my_prayer';
+  const completionStatus = {
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  };
+
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isMyPrayerTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isMyPrayerTaskCompleted: true });
 
   useEffect(() => {
     const fetchPrayer = async () => {
@@ -103,7 +126,7 @@ const MyPrayerPage = () => {
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
-          task_name: 'my_prayer',
+          task_name: currentTaskName,
           task_date: today,
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
@@ -113,7 +136,12 @@ const MyPrayerPage = () => {
       }
       showSuccess("Oração do dia finalizada!");
       queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
-      navigate('/today');
+      
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
     } catch (error: any) {
       showError("Erro ao finalizar a oração: " + error.message);
       console.error("Erro ao finalizar oração:", error);
@@ -184,15 +212,19 @@ const MyPrayerPage = () => {
           className="w-fit px-3"
           disabled={!prayerContent}
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-4 w-4 mr-2" />
         </Button>
         <Button 
           onClick={handleCompleteTask} 
           className="flex-1"
           disabled={isCompleting || !prayerContent}
         >
-          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-          Finalizar Oração
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+            </>
+          )}
         </Button>
       </div>
     </div>

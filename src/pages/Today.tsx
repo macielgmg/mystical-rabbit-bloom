@@ -336,12 +336,12 @@ const Today = () => {
   return (
     <div className="container mx-auto max-w-2xl h-full flex flex-col space-y-4">
       <Card className="flex-shrink-0">
-        <CardContent className="p-3 space-y-3"> {/* Reduzido de p-4 space-y-4 */}
+        <CardContent className="p-3 space-y-3">
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3"> {/* Reduzido de gap-4 */}
-              <Avatar className="h-10 w-10 bg-gradient-to-br from-green-200 to-blue-200"> {/* Reduzido de h-12 w-12 */}
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 bg-gradient-to-br from-green-200 to-blue-200">
                 <AvatarImage src={avatarUrl || undefined} alt="Foto do perfil" />
-                <AvatarFallback className="text-lg font-bold text-primary bg-transparent"> {/* Reduzido de text-xl */}
+                <AvatarFallback className="text-lg font-bold text-primary bg-transparent">
                   {getInitials(fullName)}
                 </AvatarFallback>
               </Avatar>
@@ -350,17 +350,17 @@ const Today = () => {
                 <p className="text-sm text-muted-foreground">O amor de Deus em detalhes</p>
               </div>
             </div>
-            <div className="flex items-center gap-2"> {/* Reduzido de gap-3 */}
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-primary font-bold">
-                <Flame className="h-4 w-4 text-orange-500" /> {/* Reduzido de h-5 w-5 */}
+                <Flame className="h-4 w-4 text-orange-500" />
                 <span>{isLoadingAny ? <Loader2 className="h-4 w-4 animate-spin" /> : (streakData?.streak_count || 0)}</span>
               </div>
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" /> {/* Reduzido de h-5 w-5 */}
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
           <WeekCalendar />
           {/* Indicador de Progresso Diário */}
-          <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20"> {/* Reduzido de pt-4 */}
+          <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
               <span className="text-sm text-muted-foreground">

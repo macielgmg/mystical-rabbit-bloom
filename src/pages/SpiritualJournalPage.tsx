@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { Progress } from '@/components/ui/progress'; // Importar Progress
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
-import { format } from 'date-fns'; // Importar format para a data
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { format } from 'date-fns';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -22,7 +23,29 @@ const SpiritualJournalPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
+
+  const currentTaskName = 'spiritual_journal';
+  const completionStatus = {
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  };
+
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true }); // Simula que a tarefa atual está completa para a verificação
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true }); // Simula que a tarefa atual está completa para encontrar a próxima
 
   useEffect(() => {
     const fetchInitialState = async () => {
@@ -35,7 +58,7 @@ const SpiritualJournalPage = () => {
         .from('daily_tasks_progress')
         .select('value')
         .eq('user_id', session.user.id)
-        .eq('task_name', 'spiritual_journal')
+        .eq('task_name', currentTaskName)
         .eq('task_date', todayStr)
         .single();
 
@@ -45,7 +68,7 @@ const SpiritualJournalPage = () => {
       setLoading(false);
     };
     fetchInitialState();
-  }, [session]);
+  }, [session, currentTaskName]);
 
   const handleSave = async () => {
     if (!session) {
@@ -61,7 +84,7 @@ const SpiritualJournalPage = () => {
         .from('daily_tasks_progress')
         .upsert({
           user_id: session.user.id,
-          task_name: 'spiritual_journal',
+          task_name: currentTaskName,
           task_date: today,
           value: newValue,
         }, { onConflict: 'user_id,task_name,task_date' });
@@ -70,10 +93,14 @@ const SpiritualJournalPage = () => {
         throw error;
       }
       showSuccess("Progresso salvo!");
+      
       // Invalida a query para atualizar o status na página Today
-      // Não é necessário invalidar aqui, pois o useDailyTasksProgress já faz isso
-      // e a navegação para /today fará com que o Today.tsx refetch.
-      navigate('/today');
+      // e navega para a próxima tarefa ou para a página Today se for a última
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
     } catch (error: any) {
       showError("Erro ao salvar seu progresso: " + error.message);
       console.error("Erro ao salvar progresso:", error);
@@ -133,7 +160,12 @@ const SpiritualJournalPage = () => {
 
       <div className="pt-4">
         <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar e Concluir"}
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+            </>
+          )}
         </Button>
       </div>
     </div>

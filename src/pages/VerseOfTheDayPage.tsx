@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2 } from 'lucide-react'; // Removido CheckCircle
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Importar Progress
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const VerseOfTheDayPage = () => {
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isCompleting, setIsCompleting] = useState(false);
+  // Removido isCompleting, pois esta tarefa não tem botão de finalizar
 
   const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
 
@@ -95,38 +95,7 @@ const VerseOfTheDayPage = () => {
     }
   };
 
-  const handleCompleteVerse = async () => {
-    if (!session) {
-      showError("Você precisa estar logado para finalizar.");
-      return;
-    }
-    setIsCompleting(true);
-    const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
-
-    try {
-      const { error } = await supabase
-        .from('daily_tasks_progress')
-        .upsert({
-          user_id: userId,
-          task_name: 'verse_of_the_day',
-          task_date: today,
-          value: 1, // Indica que a tarefa foi concluída
-        }, { onConflict: 'user_id,task_name,task_date' });
-
-      if (error) {
-        throw error;
-      }
-      showSuccess("Versículo do dia finalizado!");
-      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] }); // Invalida a query para atualizar o status na página Today
-      navigate('/today');
-    } catch (error: any) {
-      showError("Erro ao finalizar o versículo: " + error.message);
-      console.error("Erro ao finalizar versículo:", error);
-    } finally {
-      setIsCompleting(false);
-    }
-  };
+  // Removido handleCompleteVerse, pois esta tarefa não tem botão de finalizar
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -180,7 +149,7 @@ const VerseOfTheDayPage = () => {
         )}
       </div>
 
-      <div className="flex justify-between items-center py-4 gap-4">
+      <div className="flex justify-center items-center py-4 gap-4"> {/* Centralizado e sem botão de finalizar */}
         <Button 
           variant="outline" 
           onClick={handleShare} 
@@ -188,15 +157,13 @@ const VerseOfTheDayPage = () => {
           className="w-fit px-3"
           disabled={!verseContent}
         >
-          <Share2 className="h-4 w-4" />
+          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
         </Button>
         <Button 
-          onClick={handleCompleteVerse} 
+          onClick={() => navigate('/today')} 
           className="flex-1"
-          disabled={isCompleting || !verseContent}
         >
-          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-          Finalizar Versículo
+          Voltar para Hoje
         </Button>
       </div>
     </div>

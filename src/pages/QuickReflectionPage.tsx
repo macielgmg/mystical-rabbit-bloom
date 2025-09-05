@@ -8,8 +8,9 @@ import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Importar Progress
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
 
 const QuickReflectionPage = () => {
   const navigate = useNavigate();
@@ -19,7 +20,29 @@ const QuickReflectionPage = () => {
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
+
+  const currentTaskName = 'quick_reflection';
+  const completionStatus = {
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  };
+
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isQuickReflectionTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isQuickReflectionTaskCompleted: true });
 
   useEffect(() => {
     const fetchReflection = async () => {
@@ -103,7 +126,7 @@ const QuickReflectionPage = () => {
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
-          task_name: 'quick_reflection',
+          task_name: currentTaskName,
           task_date: today,
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
@@ -113,7 +136,12 @@ const QuickReflectionPage = () => {
       }
       showSuccess("Reflexão rápida finalizada!");
       queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
-      navigate('/today');
+      
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
     } catch (error: any) {
       showError("Erro ao finalizar a reflexão: " + error.message);
       console.error("Erro ao finalizar reflexão:", error);
@@ -191,8 +219,12 @@ const QuickReflectionPage = () => {
           className="flex-1"
           disabled={isCompleting || !reflectionContent}
         >
-          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-          Finalizar Reflexão
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+            </>
+          )}
         </Button>
       </div>
     </div>

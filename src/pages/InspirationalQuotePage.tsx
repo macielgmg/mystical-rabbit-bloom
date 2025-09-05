@@ -5,11 +5,12 @@ import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { format } from 'date-fns'; // Corrigido: 'from' em vez de '='
+import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Importar Progress
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
@@ -19,7 +20,29 @@ const InspirationalQuotePage = () => {
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
+
+  const currentTaskName = 'inspirational_quotes';
+  const completionStatus = {
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  };
+
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isInspirationalQuoteTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isInspirationalQuoteTaskCompleted: true });
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -103,7 +126,7 @@ const InspirationalQuotePage = () => {
         .from('daily_tasks_progress')
         .upsert({
           user_id: userId,
-          task_name: 'inspirational_quotes',
+          task_name: currentTaskName,
           task_date: today,
           value: 1,
         }, { onConflict: 'user_id,task_name,task_date' });
@@ -113,7 +136,12 @@ const InspirationalQuotePage = () => {
       }
       showSuccess("Citação inspiradora finalizada!");
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
-      navigate('/today');
+      
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
     } catch (error: any) {
       showError("Erro ao finalizar a citação: " + error.message);
       console.error("Erro ao finalizar citação:", error);
@@ -191,8 +219,12 @@ const InspirationalQuotePage = () => {
           className="flex-1"
           disabled={isCompleting || !quoteContent}
         >
-          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-          Finalizar Citação
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
+            </>
+          )}
         </Button>
       </div>
     </div>
