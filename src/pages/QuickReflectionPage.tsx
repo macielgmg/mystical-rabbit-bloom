@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
-import { showError } from '@/utils/toast';
+import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X, Save } from 'lucide-react'; // Adicionado Save
+import { showError, showSuccess } from '@/utils/toast'; // Adicionado showSuccess
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +14,18 @@ import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirst
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { Textarea } from '@/components/ui/textarea'; // Importar Textarea
 
 const QuickReflectionPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
   const [reflectionContent, setReflectionContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
+  const [userNotes, setUserNotes] = useState<string>('');
+  const [initialUserNotes, setInitialUserNotes] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isSavingNotes, setIsSavingNotes] = useState(false); // Novo estado para salvar anotações
 
   const { 
     completedDailyTasksCount, 
@@ -50,7 +54,7 @@ const QuickReflectionPage = () => {
   const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
-    const fetchReflection = async () => {
+    const fetchReflectionAndNotes = async () => {
       if (!session?.user) {
         setLoading(false);
         return;
@@ -59,6 +63,7 @@ const QuickReflectionPage = () => {
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const userId = session.user.id;
 
+      // Fetch daily content template ID
       const { data: dailyContentData, error: dailyContentError } = await supabase
         .from('daily_content_for_users')
         .select('quick_reflection')
@@ -77,6 +82,7 @@ const QuickReflectionPage = () => {
       const reflectionTemplateId = dailyContentData?.quick_reflection;
 
       if (reflectionTemplateId) {
+        // Fetch template content
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
           .select('text_content, url_audio')
@@ -95,10 +101,33 @@ const QuickReflectionPage = () => {
       } else {
         setReflectionContent(null);
       }
+
+      // Fetch user's existing notes for this task
+      const { data: userProgressData, error: userProgressError } = await supabase
+        .from('daily_tasks_progress')
+        .select('text_value')
+        .eq('user_id', userId)
+        .eq('task_name', currentTaskName)
+        .eq('task_date', todayStr)
+        .single();
+
+      if (userProgressError && userProgressError.code !== 'PGRST116') {
+        console.error("Erro ao buscar anotações do usuário para reflexão rápida:", userProgressError);
+        showError("Erro ao carregar suas anotações.");
+        setUserNotes('');
+        setInitialUserNotes('');
+      } else if (userProgressData) {
+        setUserNotes(userProgressData.text_value || '');
+        setInitialUserNotes(userProgressData.text_value || '');
+      } else {
+        setUserNotes('');
+        setInitialUserNotes('');
+      }
+
       setLoading(false);
     };
-    fetchReflection();
-  }, [session, navigate]);
+    fetchReflectionAndNotes();
+  }, [session, navigate, queryClient]);
 
   const handleShare = () => {
     if (navigator.share && reflectionContent?.text) {
@@ -117,6 +146,44 @@ const QuickReflectionPage = () => {
     }
   };
 
+  const handleSaveNotes = async () => {
+    if (!session) {
+      showError("Você precisa estar logado para salvar suas anotações.");
+      return;
+    }
+    setIsSavingNotes(true);
+    const today = new Date().toISOString().split('T')[0];
+    const userId = session.user.id;
+
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: userId,
+          task_name: currentTaskName,
+          task_date: today,
+          text_value: userNotes, // Salva as anotações
+          value: 0, // Não marca como completo, apenas salva as anotações
+        }, { onConflict: 'user_id,task_name,task_date' });
+
+      if (error) {
+        throw error;
+      }
+      showSuccess("Anotações salvas com sucesso!");
+      setInitialUserNotes(userNotes); // Atualiza o estado inicial das anotações
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] }); // Invalida para atualizar o progresso
+    } catch (error: any) {
+      showError("Erro ao salvar anotações: " + error.message);
+      console.error("Erro ao salvar anotações:", error);
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  const handleCancelNotes = () => {
+    setUserNotes(initialUserNotes); // Reverte para as anotações iniciais
+  };
+
   const handleCompleteTask = async () => {
     if (!session) {
       showError("Você precisa estar logado para finalizar.");
@@ -133,7 +200,8 @@ const QuickReflectionPage = () => {
           user_id: userId,
           task_name: currentTaskName,
           task_date: today,
-          value: 1,
+          value: 1, // Marca como completo
+          text_value: userNotes, // Salva as anotações junto com a conclusão
         }, { onConflict: 'user_id,task_name,task_date' });
 
       if (error) {
@@ -154,6 +222,8 @@ const QuickReflectionPage = () => {
       setIsCompleting(false);
     }
   };
+
+  const hasNotesChanges = userNotes !== initialUserNotes;
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -196,7 +266,7 @@ const QuickReflectionPage = () => {
         <Progress value={dailyProgressPercentage} className="h-2.5" />
       </div>
 
-      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
+      <div className="flex-grow flex flex-col space-y-6 overflow-y-auto pb-4">
         {reflectionContent?.text ? (
           <Card className="p-6 space-y-4 w-full">
             <CardHeader className="p-0 pb-2">
@@ -210,18 +280,46 @@ const QuickReflectionPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground flex-grow flex flex-col justify-center items-center">
+            <Lightbulb className="h-24 w-24 text-muted-foreground/50 mb-4" />
             <p className="text-lg">Nenhuma reflexão disponível para hoje.</p>
             <p className="text-sm">Tente novamente mais tarde ou verifique sua conexão.</p>
           </div>
         )}
-      </div>
 
-      {reflectionContent?.url_audio && (isPro ? (
-        <AudioPlayer src={reflectionContent.url_audio} className="mb-4" />
-      ) : (
-        <ProAudioPlaceholder className="mb-4" />
-      ))}
+        {reflectionContent?.url_audio && (isPro ? (
+          <AudioPlayer src={reflectionContent.url_audio} className="mb-4" />
+        ) : (
+          <ProAudioPlaceholder className="mb-4" />
+        ))}
+
+        {/* Campo de anotações do usuário */}
+        <div className="space-y-4 pt-4 border-t border-muted-foreground/20">
+          <h3 className="font-bold text-lg text-primary/90">Minhas Anotações</h3>
+          <Textarea
+            placeholder="Escreva suas anotações aqui..."
+            value={userNotes}
+            onChange={(e) => setUserNotes(e.target.value)}
+            className="min-h-[120px]"
+          />
+          <div className="flex gap-2 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={handleCancelNotes} 
+              disabled={!hasNotesChanges || isSavingNotes}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveNotes} 
+              disabled={!hasNotesChanges || isSavingNotes}
+            >
+              {isSavingNotes ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar Anotações
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}
