@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,16 +13,15 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession();
+  const { session, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
-  // isCompleting não é mais necessário para o Versículo do Dia, mas mantido para consistência de UI se o botão for reusado.
-  const [isCompleting, setIsCompleting] = useState(false); 
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const { 
     completedDailyTasksCount, 
@@ -33,10 +32,10 @@ const VerseOfTheDayPage = () => {
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted, // Corrigido para isMyPrayerTaskCompleted
+    isMyPrayerTaskCompleted,
   } = useDailyTasksProgress();
 
-  const currentTaskName = 'verse_of_the_day'; // Mantido para referência, mas não é uma tarefa na sequência
+  const currentTaskName = 'verse_of_the_day';
   const completionStatus = {
     isJournalCompleted,
     isDailyStudyTaskCompleted,
@@ -45,15 +44,10 @@ const VerseOfTheDayPage = () => {
     isMyPrayerTaskCompleted,
   };
 
-  // A lógica de isLastTask e nextTaskPath agora se baseia na `dailyTaskSequence` sem o versículo.
-  // Para o Versículo do Dia, o "próximo" é a primeira tarefa real da sequência.
-  const firstRealTaskPath = getNextIncompleteTaskPath('start_of_day', completionStatus); // 'start_of_day' é um placeholder
-  const nextPath = firstRealTaskPath || '/today'; // Se não houver tarefas, volta para /today
-
-  // O Versículo do Dia não é uma tarefa na sequência, então não tem "anterior" ou "última tarefa" no mesmo sentido.
-  // O botão "Voltar" deve ir para a página "Hoje".
-  const previousTaskPath = '/today'; 
-  const isFirstTask = true; // Consideramos o Versículo do Dia como o "primeiro" item do dia, mas não uma tarefa.
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
+  const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -130,9 +124,42 @@ const VerseOfTheDayPage = () => {
     }
   };
 
-  const handleContinue = () => {
-    // O Versículo do Dia não é uma tarefa, então apenas navega para a próxima etapa.
-    navigate(nextPath);
+  const handleCompleteTask = async () => {
+    if (!session) {
+      showError("Você precisa estar logado para finalizar.");
+      return;
+    }
+    setIsCompleting(true);
+    const today = new Date().toISOString().split('T')[0];
+    const userId = session.user.id;
+
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: userId,
+          task_name: currentTaskName,
+          task_date: today,
+          value: 1,
+        }, { onConflict: 'user_id,task_name,task_date' });
+
+      if (error) {
+        throw error;
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      
+      if (nextTaskPath) {
+        navigate(nextTaskPath);
+      } else {
+        navigate('/today');
+      }
+    } catch (error: any) {
+      showError("Erro ao finalizar o versículo: " + error.message);
+      console.error("Erro ao finalizar versículo:", error);
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   if (loading || isLoadingAnyDailyTask) {
@@ -165,7 +192,7 @@ const VerseOfTheDayPage = () => {
         </Button>
       </header>
 
-      {/* Indicador de Progresso Diário (ainda exibido, mas o Versículo não contribui para ele) */}
+      {/* Indicador de Progresso Diário */}
       <div className="w-full space-y-2 mb-4">
         <div className="flex justify-between items-center">
           <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
@@ -213,25 +240,28 @@ const VerseOfTheDayPage = () => {
           <Share2 className="h-4 w-4" />
         </Button>
 
-        {/* Back Button (sempre volta para /today, pois não faz parte da sequência de tarefas) */}
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/today')} 
-          className="flex-1"
-          disabled={isCompleting}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
-        </Button>
+        {/* Back Button (conditional) */}
+        {!isFirstTask && previousTaskPath && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(previousTaskPath)} 
+            className="flex-1"
+            disabled={isCompleting}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+          </Button>
+        )}
 
-        {/* Continue Button (agora apenas navega) */}
+        {/* Continue/Finalize Button */}
         <Button 
-          onClick={handleContinue} 
-          className="flex-1"
+          onClick={handleCompleteTask} 
+          className={cn("flex-1", isFirstTask ? "w-full" : "")}
           disabled={isCompleting || !verseContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
             <>
-              Continuar <ArrowRight className="h-4 w-4 ml-2" />
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLastTask ? "Finalizar Jornada" : "Continuar"}
             </>
           )}
         </Button>

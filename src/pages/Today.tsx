@@ -12,12 +12,10 @@ import { VerseOfTheDay } from '@/components/VerseOfTheDay';
 import { QuickReflectionTask } from '@/components/QuickReflectionTask';
 import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask';
 import { MyPrayerTask } from '@/components/MyPrayerTask';
-import { format, isSameDay, parseISO, startOfWeek, addDays } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { DailySummaryModal } from '@/components/DailySummaryModal'; // Importar o novo modal
-import { showError } from '@/utils/toast'; // Importar showError para feedback ao usuário
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -28,16 +26,15 @@ interface DailyContentTemplateIds {
   inspirational_quotes: string | null;
   my_prayer: string | null;
   updated_at: string;
-  content_date: string; // Adicionado para facilitar a verificação de datas
 }
 
 // Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
-  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
-  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null; // Alterado para auxiliar_text
+  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Alterado para auxiliar_text
   inspirational_quotes: { text: string | null; url_audio: string | null } | null;
-  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Alterado para auxiliar_text
 }
 
 interface DailyContentTemplate {
@@ -46,7 +43,7 @@ interface DailyContentTemplate {
   title: string | null;
   text_content: string;
   reference: string | null;
-  auxiliar_text: string | null;
+  auxiliar_text: string | null; // Alterado para auxiliar_text
   tags: string[] | null;
   explanation: string | null;
   url_audio: string | null;
@@ -86,8 +83,6 @@ const Today = () => {
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
-  const [datesWithDailyContent, setDatesWithDailyContent] = useState<Set<string>>(new Set()); // Novo estado
-  const [selectedDateForSummary, setSelectedDateForSummary] = useState<Date | null>(null); // Estado para a data clicada no calendário
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -96,7 +91,7 @@ const Today = () => {
     dailyProgressPercentage, 
     isLoadingAnyDailyTask,
     isJournalCompleted,
-    isVerseOfTheDayTaskCompleted, // Mantido para o componente VerseOfTheDayTask, mas não para o progresso geral
+    isVerseOfTheDayTaskCompleted,
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
@@ -129,7 +124,6 @@ const Today = () => {
     if (!session?.user) {
       setLoadingDailyContent(false);
       setActualDailyContent(null);
-      setDatesWithDailyContent(new Set()); // Limpa o estado
       return;
     }
 
@@ -137,29 +131,6 @@ const Today = () => {
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     const userId = session.user.id;
-
-    // --- Lógica para buscar conteúdo da semana para o calendário ---
-    const weekStartsOn = 0; // 0 para Domingo
-    const startOfWeekDate = startOfWeek(today, { weekStartsOn });
-    const weekDates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      weekDates.push(format(addDays(startOfWeekDate, i), 'yyyy-MM-dd'));
-    }
-
-    const { data: weekContentData, error: weekContentError } = await supabase
-      .from('daily_content_for_users')
-      .select('content_date')
-      .eq('user_id', userId)
-      .in('content_date', weekDates);
-
-    if (weekContentError) {
-      console.error("Erro ao buscar conteúdo da semana para o calendário:", weekContentError);
-    } else if (weekContentData) {
-      const dates = new Set(weekContentData.map(item => item.content_date));
-      setDatesWithDailyContent(dates);
-    }
-    // --- Fim da lógica para buscar conteúdo da semana ---
-
 
     let currentDailyContentIds: DailyContentTemplateIds | null = null;
 
@@ -260,7 +231,7 @@ const Today = () => {
         if (templateId) {
           contentPromises.push(
             supabase.from('daily_content_templates')
-              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
+              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio') // Alterado para 'auxiliar_text'
               .eq('id', templateId)
               .single()
               .then(({ data, error }) => {
@@ -272,11 +243,11 @@ const Today = () => {
                   return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
                 }
                 if (key === 'daily_study' && data) {
-                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null }; // Alterado para auxiliar_text
                 }
                 // Para quick_reflection, inspirational_quotes, my_prayer, retornamos um objeto com text_content e url_audio
                 if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(key) && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null }; // Alterado para auxiliar_text
                 }
                 return null; // Fallback
               })
@@ -361,19 +332,6 @@ const Today = () => {
     return 'U';
   };
 
-  const handleDayClick = (date: Date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    if (datesWithDailyContent.has(formattedDate)) {
-      setSelectedDateForSummary(date);
-    } else {
-      showError("Nenhum conteúdo diário disponível para esta data.");
-    }
-  };
-
-  const handleCloseSummaryModal = () => {
-    setSelectedDateForSummary(null);
-  };
-
   const isLoadingAny = isLoadingAnyDailyTask || loadingStreak || loadingDailyContent;
 
   return (
@@ -401,7 +359,7 @@ const Today = () => {
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-          <WeekCalendar datesWithDailyContent={datesWithDailyContent} onDayClick={handleDayClick} /> {/* Passa o novo prop e handler */}
+          <WeekCalendar />
           {/* Indicador de Progresso Diário */}
           <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
@@ -455,9 +413,6 @@ const Today = () => {
           </>
         )}
       </div>
-
-      {/* Renderiza o modal de resumo diário se uma data for selecionada */}
-      <DailySummaryModal date={selectedDateForSummary} onClose={handleCloseSummaryModal} />
     </div>
   );
 };
