@@ -37,52 +37,55 @@ import DailyHistoryPage from "./pages/DailyHistoryPage"; // Import DailyHistoryP
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <SessionProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              {/* Rota do OnboardingQuiz fora do Layout */}
-              <Route path="/onboarding-quiz" element={<ProtectedRoute><OnboardingQuiz /></ProtectedRoute>} />
-              <Route 
-                element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/library" element={<StudyLibrary />} />
-                <Route path="/store" element={<Store />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/achievements" element={<AchievementsPage />} />
-                <Route path="/personal-data" element={<PersonalData />} />
-                <Route path="/manage-subscription" element={<ManageSubscriptionPage />} />
-                <Route path="/preferences" element={<PreferencesPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/about-app" element={<AboutAppPage />} />
-                <Route path="/account-security" element={<AccountSecurityPage />} /> {/* New route for AccountSecurityPage */}
-                <Route path="/study/:studyId" element={<StudyDetail />} />
-                <Route path="/study/:studyId/chapter/:chapterId" element={<ChapterDetail />} />
-                <Route path="/today" element={<Today />} />
-                <Route path="/today/spiritual-journal" element={<SpiritualJournalPage />} />
-                <Route path="/today/verse-of-the-day" element={<VerseOfTheDayPage />} />
-                <Route path="/today/daily-study" element={<DailyStudyPage />} />
-                <Route path="/today/quick-reflection" element={<QuickReflectionPage />} />
-                <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} />
-                <Route path="/today/my-prayer" element={<MyPrayerPage />} />
-                <Route path="/today/history/:date" element={<DailyHistoryPage />} /> {/* New route for DailyHistoryPage */}
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </SessionProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+  <React.Fragment> {/* Adicionado React.Fragment aqui */}
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <SessionProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                {/* Rota do OnboardingQuiz fora do Layout */}
+                <Route path="/onboarding-quiz" element={<ProtectedRoute><OnboardingQuiz /></ProtectedRoute>} />
+                <Route 
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/library" element={<StudyLibrary />} />
+                  <Route path="/store" element={<Store />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/achievements" element={<AchievementsPage />} />
+                  <Route path="/personal-data" element={<PersonalData />} />
+                  <Route path="/manage-subscription" element={<ManageSubscriptionPage />} />
+                  <Route path="/preferences" element={<PreferencesPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/about-app" element={<AboutAppPage />} />
+                  <Route path="/account-security" element={<AccountSecurityPage />} /> {/* New route for AccountSecurityPage */}
+                  <Route path="/study/:studyId" element={<StudyDetail />} />
+                  <Route path="/study/:studyId/chapter/:chapterId" element={<ChapterDetail />} />
+                  <Route path="/today" element={<Today />} />
+                  <Route path="/today/spiritual-journal" element={<SpiritualJournalPage />} />
+                  <Route path="/today/verse-of-the-day" element={<VerseOfTheDayPage />} />
+                  <Route path="/today/daily-study" element={<DailyStudyPage />} />
+                  <Route path="/today/quick-reflection" element={<QuickReflectionPage />} />
+                  <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} />
+                  <Route path="/today/my-prayer" element={<MyPrayerPage />} />
+                  <Route path="/today/history/:date" element={<DailyHistoryPage />} /> {/* New route for DailyHistoryPage */}
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SessionProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
+  </React.Fragment> {/* Fechamento do React.Fragment */}
 );
 
 export default App;
