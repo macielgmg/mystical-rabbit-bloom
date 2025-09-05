@@ -85,7 +85,7 @@ const App = () => (
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  </React.Fragment> {/* Fechamento do React.Fragment */}
+  </React.Fragment> 
 );
 
 export default App;
