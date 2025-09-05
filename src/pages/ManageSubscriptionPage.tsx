@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Crown, XCircle, Gem, BookOpen, Sparkles, TrendingUp, Frown } from "lucide-react";
+import { ArrowLeft, CheckCircle, Crown, XCircle, Gem, BookOpen, Sparkles, TrendingUp, Frown, Headphones } from "lucide-react"; // Adicionado Headphones
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/contexts/SessionContext";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 
@@ -27,7 +26,7 @@ const ManageSubscriptionPage = () => {
 
   const proBenefits = [
     { icon: BookOpen, text: "Acesso ilimitado a todos os estudos premium." },
-    { icon: Sparkles, text: "Conteúdo diário exclusivo e personalizado." },
+    { icon: Headphones, text: "Conteúdo diário exclusivo e personalizado, incluindo áudios." }, {/* Atualizado para incluir áudio */}
     { icon: TrendingUp, text: "Ferramentas avançadas de acompanhamento de progresso." },
     { icon: Gem, text: "Novos recursos e estudos adicionados mensalmente." },
   ];
