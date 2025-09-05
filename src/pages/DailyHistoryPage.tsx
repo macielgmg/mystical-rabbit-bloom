@@ -93,46 +93,42 @@ const DailyHistoryPage = () => {
 
       const contentMap: Partial<DailyContentActual> = {};
       const templatePromises: Promise<any>[] = [];
-      const availableContentIds: string[] = []; // To track which content types are available
+      
+      // Define all possible content types
+      const templateFields: Array<keyof DailyContentForUser> = ['verse_of_the_day', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
 
-      if (contentIds) {
-        const templateFields: Array<keyof DailyContentForUser> = ['verse_of_the_day', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
-
-        for (const field of templateFields) {
-          const templateId = contentIds[field];
-          if (templateId) {
-            availableContentIds.push(field); // Add to available content types
-            templatePromises.push(
-              supabase.from('daily_content_templates')
-                .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
-                .eq('id', templateId)
-                .single()
-                .then(({ data, error }) => {
-                  if (error) console.error(`Error fetching template for ${field}:`, error);
-                  if (data) {
-                    if (field === 'verse_of_the_day') {
-                      contentMap[field] = { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
-                    } else if (field === 'daily_study') {
-                      contentMap[field] = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
-                    } else if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(field)) {
-                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                    }
+      for (const field of templateFields) {
+        const templateId = contentIds?.[field]; // Use optional chaining
+        if (templateId) {
+          templatePromises.push(
+            supabase.from('daily_content_templates')
+              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
+              .eq('id', templateId)
+              .single()
+              .then(({ data, error }) => {
+                if (error) console.error(`Error fetching template for ${field}:`, error);
+                if (data) {
+                  if (field === 'verse_of_the_day') {
+                    contentMap[field] = { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
+                  } else if (field === 'daily_study') {
+                    contentMap[field] = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
+                  } else if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(field)) {
+                    contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                   }
-                })
-            );
-          } else {
-            contentMap[field] = null;
-          }
+                }
+              })
+          );
+        } else {
+          contentMap[field] = null;
         }
-        await Promise.all(templatePromises);
-        setActualDailyContent(contentMap);
-        if (availableContentIds.length > 0) {
-          setActiveTab(availableContentIds[0]); // Set the first available content type as the active tab
-        }
-      } else {
-        setActualDailyContent(null);
       }
-
+      await Promise.all(templatePromises);
+      setActualDailyContent(contentMap);
+      
+      // Set the first available content type as the active tab, or 'verse_of_the_day' if none
+      const firstAvailableTab = templateFields.find(field => contentMap[field] !== null) || 'verse_of_the_day';
+      setActiveTab(firstAvailableTab);
+      
       // 2. Fetch daily_tasks_progress for the specific date
       const { data: progressData, error: progressError } = await supabase
         .from('daily_tasks_progress')
@@ -194,7 +190,8 @@ const DailyHistoryPage = () => {
     );
   }
 
-  if (!dailyContentIds || !actualDailyContent || Object.values(actualDailyContent).every(val => val === null)) {
+  // If there's no daily_content_for_users entry for this date, show the "no content" message
+  if (!dailyContentIds) {
     return (
       <div className="container mx-auto max-w-2xl p-4">
         <header className="relative flex items-center justify-center py-4 mb-4">
@@ -221,14 +218,12 @@ const DailyHistoryPage = () => {
   }
 
   const tabsConfig = [
-    { id: 'verse_of_the_day', label: 'Versículo', icon: BookOpen, content: actualDailyContent.verse_of_the_day },
-    { id: 'daily_study', label: 'Estudo', icon: BookOpen, content: actualDailyContent.daily_study },
-    { id: 'quick_reflection', label: 'Reflexão', icon: Lightbulb, content: actualDailyContent.quick_reflection },
-    { id: 'inspirational_quotes', label: 'Citação', icon: Sparkles, content: actualDailyContent.inspirational_quotes },
-    { id: 'my_prayer', label: 'Oração', icon: Heart, content: actualDailyContent.my_prayer },
+    { id: 'verse_of_the_day', label: 'Versículo', icon: BookOpen, content: actualDailyContent?.verse_of_the_day },
+    { id: 'daily_study', label: 'Estudo', icon: BookOpen, content: actualDailyContent?.daily_study },
+    { id: 'quick_reflection', label: 'Reflexão', icon: Lightbulb, content: actualDailyContent?.quick_reflection },
+    { id: 'inspirational_quotes', label: 'Citação', icon: Sparkles, content: actualDailyContent?.inspirational_quotes },
+    { id: 'my_prayer', label: 'Oração', icon: Heart, content: actualDailyContent?.my_prayer },
   ];
-
-  const availableTabs = tabsConfig.filter(tab => tab.content !== null);
 
   return (
     <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4">
@@ -256,12 +251,12 @@ const DailyHistoryPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 p-1 rounded-lg bg-secondary/50 mb-4"> {/* Adicionado p-1, rounded-lg, bg-secondary/50 */}
-          {availableTabs.map(tab => (
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 p-1 rounded-lg bg-secondary/50 mb-4">
+          {tabsConfig.map(tab => ( // Iterate over all tabsConfig
             <TabsTrigger 
               key={tab.id} 
               value={tab.id} 
-              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-md text-xs sm:text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm transition-all" // Estilização aprimorada
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-md text-xs sm:text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm transition-all"
             >
               {getTaskCompletionIcon(tab.id)}
               <tab.icon className="h-4 w-4" />
@@ -270,8 +265,8 @@ const DailyHistoryPage = () => {
           ))}
         </TabsList>
         <div className="flex-grow overflow-y-auto">
-          {availableTabs.map(tab => (
-            <TabsContent key={tab.id} value={tab.id} className="mt-4"> {/* Adicionado mt-4 para espaçamento */}
+          {tabsConfig.map(tab => ( // Iterate over all tabsConfig
+            <TabsContent key={tab.id} value={tab.id} className="mt-4">
               <Card className="p-4 space-y-2">
                 <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -279,98 +274,106 @@ const DailyHistoryPage = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {tab.id === 'verse_of_the_day' && tab.content && (
+                  {tab.content ? (
                     <>
-                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{tab.content.text}"
-                      </p>
-                      <p className="text-sm font-semibold text-muted-foreground mt-2">
-                        — {tab.content.reference}
-                      </p>
-                      {tab.content.explanation && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {tab.content.explanation}
-                        </p>
-                      )}
-                      {tab.content.url_audio && (isPro ? (
-                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
-                      ) : (
-                        <ProAudioPlaceholder className="mt-4" />
-                      ))}
-                    </>
-                  )}
-                  {tab.id === 'daily_study' && tab.content && (
-                    <>
-                      <h3 className="text-xl font-bold text-primary/90 mb-2">{tab.content.title}</h3>
-                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{tab.content.text}"
-                      </p>
-                      {tab.content.auxiliar_text && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {tab.content.auxiliar_text}
-                        </p>
-                      )}
-                      {tab.content.tags && tab.content.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          {tab.content.tags.map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium">
-                              {tag.toUpperCase()}
-                            </Badge>
+                      {tab.id === 'verse_of_the_day' && (
+                        <>
+                          <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                            "{tab.content.text}"
+                          </p>
+                          <p className="text-sm font-semibold text-muted-foreground mt-2">
+                            — {tab.content.reference}
+                          </p>
+                          {tab.content.explanation && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {tab.content.explanation}
+                            </p>
+                          )}
+                          {tab.content.url_audio && (isPro ? (
+                            <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                          ) : (
+                            <ProAudioPlaceholder className="mt-4" />
                           ))}
-                        </div>
+                        </>
                       )}
-                      {tab.content.url_audio && (isPro ? (
-                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
-                      ) : (
-                        <ProAudioPlaceholder className="mt-4" />
-                      ))}
-                    </>
-                  )}
-                  {tab.id === 'quick_reflection' && tab.content && (
-                    <>
-                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{tab.content.text}"
-                      </p>
-                      {tab.content.auxiliar_text && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {tab.content.auxiliar_text}
-                        </p>
+                      {tab.id === 'daily_study' && (
+                        <>
+                          <h3 className="text-xl font-bold text-primary/90 mb-2">{tab.content.title}</h3>
+                          <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                            "{tab.content.text}"
+                          </p>
+                          {tab.content.auxiliar_text && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {tab.content.auxiliar_text}
+                            </p>
+                          )}
+                          {tab.content.tags && tab.content.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                              {tab.content.tags.map((tag, index) => (
+                                <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium">
+                                  {tag.toUpperCase()}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {tab.content.url_audio && (isPro ? (
+                            <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                          ) : (
+                            <ProAudioPlaceholder className="mt-4" />
+                          ))}
+                        </>
                       )}
-                      {tab.content.url_audio && (isPro ? (
-                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
-                      ) : (
-                        <ProAudioPlaceholder className="mt-4" />
-                      ))}
-                    </>
-                  )}
-                  {tab.id === 'inspirational_quotes' && tab.content && (
-                    <>
-                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{tab.content.text}"
-                      </p>
-                      {tab.content.url_audio && (isPro ? (
-                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
-                      ) : (
-                        <ProAudioPlaceholder className="mt-4" />
-                      ))}
-                    </>
-                  )}
-                  {tab.id === 'my_prayer' && tab.content && (
-                    <>
-                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{tab.content.text}"
-                      </p>
-                      {tab.content.auxiliar_text && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {tab.content.auxiliar_text}
-                        </p>
+                      {tab.id === 'quick_reflection' && (
+                        <>
+                          <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                            "{tab.content.text}"
+                          </p>
+                          {tab.content.auxiliar_text && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {tab.content.auxiliar_text}
+                            </p>
+                          )}
+                          {tab.content.url_audio && (isPro ? (
+                            <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                          ) : (
+                            <ProAudioPlaceholder className="mt-4" />
+                          ))}
+                        </>
                       )}
-                      {tab.content.url_audio && (isPro ? (
-                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
-                      ) : (
-                        <ProAudioPlaceholder className="mt-4" />
-                      ))}
+                      {tab.id === 'inspirational_quotes' && (
+                        <>
+                          <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                            "{tab.content.text}"
+                          </p>
+                          {tab.content.url_audio && (isPro ? (
+                            <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                          ) : (
+                            <ProAudioPlaceholder className="mt-4" />
+                          ))}
+                        </>
+                      )}
+                      {tab.id === 'my_prayer' && (
+                        <>
+                          <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                            "{tab.content.text}"
+                          </p>
+                          {tab.content.auxiliar_text && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {tab.content.auxiliar_text}
+                            </p>
+                          )}
+                          {tab.content.url_audio && (isPro ? (
+                            <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                          ) : (
+                            <ProAudioPlaceholder className="mt-4" />
+                          ))}
+                        </>
+                      )}
                     </>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      <p>Nenhum conteúdo disponível para esta tarefa neste dia.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
