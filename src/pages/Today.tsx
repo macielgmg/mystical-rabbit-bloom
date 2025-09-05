@@ -16,6 +16,7 @@ import { format, isSameDay, parseISO, startOfWeek, addDays } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { DailySummaryModal } from '@/components/DailySummaryModal'; // Importar o novo modal
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -85,6 +86,7 @@ const Today = () => {
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
   const [datesWithDailyContent, setDatesWithDailyContent] = useState<Set<string>>(new Set()); // Novo estado
+  const [selectedDateForSummary, setSelectedDateForSummary] = useState<Date | null>(null); // Estado para a data clicada no calendário
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -358,6 +360,14 @@ const Today = () => {
     return 'U';
   };
 
+  const handleDayClick = (date: Date) => {
+    setSelectedDateForSummary(date);
+  };
+
+  const handleCloseSummaryModal = () => {
+    setSelectedDateForSummary(null);
+  };
+
   const isLoadingAny = isLoadingAnyDailyTask || loadingStreak || loadingDailyContent;
 
   return (
@@ -385,7 +395,7 @@ const Today = () => {
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-          <WeekCalendar datesWithDailyContent={datesWithDailyContent} /> {/* Passa o novo prop */}
+          <WeekCalendar datesWithDailyContent={datesWithDailyContent} onDayClick={handleDayClick} /> {/* Passa o novo prop e handler */}
           {/* Indicador de Progresso Diário */}
           <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
@@ -439,6 +449,9 @@ const Today = () => {
           </>
         )}
       </div>
+
+      {/* Renderiza o modal de resumo diário se uma data for selecionada */}
+      <DailySummaryModal date={selectedDateForSummary} onClose={handleCloseSummaryModal} />
     </div>
   );
 };
