@@ -10,6 +10,7 @@ import { localStudyContent } from '@/content/salmosContent';
 import { localStudies } from '@/content/studyMetadata';
 import { showSuccess, showError, showAchievementToast } from '@/utils/toast';
 import { checkAndAwardAchievements } from '@/utils/achievements';
+import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
 
 interface ChapterDetailData {
   id: string;
@@ -31,6 +32,7 @@ const ChapterDetail = () => {
   const { studyId, chapterId } = useParams<{ studyId: string; chapterId: string }>();
   const { session } = useSession();
   const navigate = useNavigate();
+  const queryClient = useQueryClient(); // Inicializar useQueryClient
   const [chapterData, setChapterData] = useState<ChapterDetailData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -209,10 +211,13 @@ const ChapterDetail = () => {
     if (success) {
       // Após salvar com sucesso, atualiza o estado local e verifica conquistas
       setIsCompleted(true); // Marca como concluído localmente
-      const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa passar studyId aqui, ele busca todo o progresso
+      const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa mais passar studyId aqui, ele busca todo o progresso
       newAchievements.forEach((ach, index) => {
         setTimeout(() => showAchievementToast(ach), index * 700);
       });
+
+      // Invalida a query de dados do perfil para que a página de Perfil recarregue as conquistas
+      queryClient.invalidateQueries({ queryKey: ['profileData', session.user.id] });
 
       if (nextChapter) {
         navigate(`/study/${studyId}/chapter/${nextChapter.id}`);
