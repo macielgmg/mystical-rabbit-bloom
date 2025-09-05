@@ -3,18 +3,24 @@ import { Flame } from 'lucide-react';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const WeekCalendar = () => {
+interface WeekCalendarProps {
+  completedContentDates: Set<string>; // Novo prop para datas com conteúdo
+}
+
+const WeekCalendar = ({ completedContentDates }: WeekCalendarProps) => {
   const weekStartsOn = 0; // 0 para Domingo
   const today = new Date();
   const startOfWeekDate = startOfWeek(today, { weekStartsOn });
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const date = addDays(startOfWeekDate, i);
+    const formattedDate = format(date, 'yyyy-MM-dd');
     return {
       date,
       dayOfMonth: format(date, 'd'),
       dayInitial: format(date, 'EEEEE', { locale: ptBR }).toUpperCase(),
       isCurrentDay: isToday(date),
+      hasDailyContent: completedContentDates.has(formattedDate), // Verifica se tem conteúdo diário
     };
   });
 
@@ -27,8 +33,10 @@ const WeekCalendar = () => {
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
               day.isCurrentDay
-                ? "border-primary bg-primary/10 text-primary"
-                : "bg-card text-card-foreground"
+                ? "border-primary bg-primary/10 text-primary" // Estilo para o dia atual (com chama)
+                : day.hasDailyContent
+                  ? "border-yellow-500 bg-yellow-100 text-primary" // Estilo para dias com conteúdo (amarelo)
+                  : "bg-card text-card-foreground" // Estilo padrão
             )}
           >
             {day.isCurrentDay ? (

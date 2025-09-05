@@ -26,6 +26,7 @@ interface DailyContentTemplateIds {
   inspirational_quotes: string | null;
   my_prayer: string | null;
   updated_at: string;
+  content_date: string; // Adicionado para buscar todas as datas
 }
 
 // Tipagem para o conteúdo real (texto) a ser exibido
@@ -83,6 +84,7 @@ const Today = () => {
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
+  const [completedContentDates, setCompletedContentDates] = useState<Set<string>>(new Set()); // Novo estado para datas com conteúdo
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -124,6 +126,7 @@ const Today = () => {
     if (!session?.user) {
       setLoadingDailyContent(false);
       setActualDailyContent(null);
+      setCompletedContentDates(new Set()); // Limpa as datas se não houver usuário
       return;
     }
 
@@ -131,6 +134,19 @@ const Today = () => {
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     const userId = session.user.id;
+
+    // Fetch ALL daily content dates for the user
+    const { data: allDailyContentEntries, error: allEntriesError } = await supabase
+      .from('daily_content_for_users')
+      .select('content_date')
+      .eq('user_id', userId);
+
+    if (allEntriesError) {
+      console.error("Erro ao buscar todas as datas de conteúdo diário:", allEntriesError);
+    } else if (allDailyContentEntries) {
+      const dates = new Set(allDailyContentEntries.map(entry => entry.content_date));
+      setCompletedContentDates(dates);
+    }
 
     let currentDailyContentIds: DailyContentTemplateIds | null = null;
 
@@ -359,7 +375,7 @@ const Today = () => {
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-          <WeekCalendar />
+          <WeekCalendar completedContentDates={completedContentDates} />
           {/* Indicador de Progresso Diário */}
           <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
