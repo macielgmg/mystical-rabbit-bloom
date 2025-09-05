@@ -256,7 +256,7 @@ const ChapterDetail = () => {
 
   return (
     <div className="container mx-auto max-w-3xl">
-      <div className="flex justify-between items-center mb-4">
+      <div className="fixed top-0 left-0 right-0 z-10 bg-background p-4 border-b border-border flex justify-between items-center max-w-3xl mx-auto">
         {/* Botão Voltar (esquerda) */}
         <Button 
           variant="ghost" 
@@ -282,7 +282,7 @@ const ChapterDetail = () => {
           </Button>
         </div>
       </div>
-      <Card>
+      <Card className="mt-20"> {/* Adicionado mt-20 para compensar a barra fixa */}
         <CardHeader>
           <CardTitle className="text-3xl text-primary">{chapterData.title}</CardTitle>
         </CardHeader>
