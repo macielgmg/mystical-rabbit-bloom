@@ -8,13 +8,16 @@ import { showError } from '@/utils/toast';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { VerseOfTheDay } from '@/components/VerseOfTheDay';
-import { DailyStudyCard } from '@/components/DailyStudyCard';
-import { QuickReflectionCard } from '@/components/QuickReflectionCard';
-import { InspirationalQuoteCard } from '@/components/InspirationalQuoteCard';
-import { MyPrayerCard } from '@/components/MyPrayerCard';
 import { Progress } from '@/components/ui/progress';
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Reusing the hook for completion status
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import { AudioPlayer } from '@/components/AudioPlayer';
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
+import { Badge } from '@/components/ui/badge'; // Importar Badge
 
 // Define interfaces for fetched data
 interface DailyContentTemplate {
@@ -39,10 +42,12 @@ interface DailyContentForUser {
   content_date: string;
 }
 
-interface DailyTaskProgress {
-  task_name: string;
-  value: number | null;
-  text_value: string | null;
+interface DailyContentActual {
+  verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
+  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
+  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  inspirational_quotes: { text: string | null; url_audio: string | null } | null;
+  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
 const DailyHistoryPage = () => {
@@ -51,14 +56,14 @@ const DailyHistoryPage = () => {
   const { session, isPro } = useSession();
   const [loading, setLoading] = useState(true);
   const [dailyContentIds, setDailyContentIds] = useState<DailyContentForUser | null>(null);
-  const [actualDailyContent, setActualDailyContent] = useState<{
-    verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
-    daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
-    quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-    inspirational_quotes: { text: string | null; url_audio: string | null } | null;
-    my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  } | null>(null);
+  const [actualDailyContent, setActualDailyContent] = useState<Partial<DailyContentActual> | null>(null);
   const [dailyTasksProgress, setDailyTasksProgress] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<string>(''); // New state for active tab
+
+  // States for historical daily progress
+  const [completedTasksCount, setCompletedTasksCount] = useState(0);
+  const [totalTasksCount, setTotalTasksCount] = useState(0);
+  const [historyProgressPercentage, setHistoryProgressPercentage] = useState(0);
 
   const formattedDate = date ? format(parseISO(date), 'dd \'de\' MMMM, yyyy', { locale: ptBR }) : 'Data Inválida';
 
@@ -86,15 +91,17 @@ const DailyHistoryPage = () => {
 
       setDailyContentIds(contentIds);
 
-      if (contentIds) {
-        const contentMap: Partial<typeof actualDailyContent> = {};
-        const templatePromises: Promise<any>[] = [];
+      const contentMap: Partial<DailyContentActual> = {};
+      const templatePromises: Promise<any>[] = [];
+      const availableContentIds: string[] = []; // To track which content types are available
 
+      if (contentIds) {
         const templateFields: Array<keyof DailyContentForUser> = ['verse_of_the_day', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
 
         for (const field of templateFields) {
           const templateId = contentIds[field];
           if (templateId) {
+            availableContentIds.push(field); // Add to available content types
             templatePromises.push(
               supabase.from('daily_content_templates')
                 .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
@@ -118,7 +125,12 @@ const DailyHistoryPage = () => {
           }
         }
         await Promise.all(templatePromises);
-        setActualDailyContent(contentMap as typeof actualDailyContent);
+        setActualDailyContent(contentMap);
+        if (availableContentIds.length > 0) {
+          setActiveTab(availableContentIds[0]); // Set the first available content type as the active tab
+        }
+      } else {
+        setActualDailyContent(null);
       }
 
       // 2. Fetch daily_tasks_progress for the specific date
@@ -132,12 +144,25 @@ const DailyHistoryPage = () => {
         throw progressError;
       }
 
-      const completedTasks = new Set<string>();
-      progressData?.forEach(task => completedTasks.add(task.task_name));
-      setDailyTasksProgress(Object.fromEntries(
-        ['spiritual_journal', 'verse_of_the_day', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer']
-        .map(taskName => [taskName, completedTasks.has(taskName)])
-      ));
+      const completedTasksSet = new Set<string>();
+      progressData?.forEach(task => completedTasksSet.add(task.task_name));
+      
+      const allPossibleTasks = ['spiritual_journal', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
+      const currentDayTasksStatus: Record<string, boolean> = {};
+      let currentDayCompletedCount = 0;
+
+      allPossibleTasks.forEach(taskName => {
+        const isCompleted = completedTasksSet.has(taskName);
+        currentDayTasksStatus[taskName] = isCompleted;
+        if (isCompleted) {
+          currentDayCompletedCount++;
+        }
+      });
+
+      setDailyTasksProgress(currentDayTasksStatus);
+      setTotalTasksCount(allPossibleTasks.length);
+      setCompletedTasksCount(currentDayCompletedCount);
+      setHistoryProgressPercentage(allPossibleTasks.length > 0 ? (currentDayCompletedCount / allPossibleTasks.length) * 100 : 0);
 
     } catch (error: any) {
       console.error("Error fetching daily history:", error);
@@ -153,6 +178,14 @@ const DailyHistoryPage = () => {
     fetchDailyContentAndProgress();
   }, [fetchDailyContentAndProgress]);
 
+  const getTaskCompletionIcon = (taskName: string) => {
+    return dailyTasksProgress[taskName] ? (
+      <CheckCircle className="h-4 w-4 text-green-500" />
+    ) : (
+      <XCircle className="h-4 w-4 text-red-500" />
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -161,7 +194,7 @@ const DailyHistoryPage = () => {
     );
   }
 
-  if (!dailyContentIds || !actualDailyContent) {
+  if (!dailyContentIds || !actualDailyContent || Object.values(actualDailyContent).every(val => val === null)) {
     return (
       <div className="container mx-auto max-w-2xl p-4">
         <header className="relative flex items-center justify-center py-4 mb-4">
@@ -187,13 +220,15 @@ const DailyHistoryPage = () => {
     );
   }
 
-  const getTaskCompletionIcon = (taskName: string) => {
-    return dailyTasksProgress[taskName] ? (
-      <CheckCircle className="h-5 w-5 text-green-500" />
-    ) : (
-      <XCircle className="h-5 w-5 text-red-500" />
-    );
-  };
+  const tabsConfig = [
+    { id: 'verse_of_the_day', label: 'Versículo', icon: BookOpen, content: actualDailyContent.verse_of_the_day },
+    { id: 'daily_study', label: 'Estudo', icon: BookOpen, content: actualDailyContent.daily_study },
+    { id: 'quick_reflection', label: 'Reflexão', icon: Lightbulb, content: actualDailyContent.quick_reflection },
+    { id: 'inspirational_quotes', label: 'Citação', icon: Sparkles, content: actualDailyContent.inspirational_quotes },
+    { id: 'my_prayer', label: 'Oração', icon: Heart, content: actualDailyContent.my_prayer },
+  ];
+
+  const availableTabs = tabsConfig.filter(tab => tab.content !== null);
 
   return (
     <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4">
@@ -209,150 +244,136 @@ const DailyHistoryPage = () => {
         <h1 className="text-xl font-bold text-primary">Jornada em {formattedDate}</h1>
       </header>
 
-      <div className="flex-grow flex flex-col space-y-4 overflow-y-auto pb-4">
-        {/* Verse of the Day */}
-        {actualDailyContent.verse_of_the_day && (
-          <Card className="p-4 space-y-2">
-            <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" /> Versículo do Dia
-              </CardTitle>
-              {getTaskCompletionIcon('verse_of_the_day')}
-            </CardHeader>
-            <CardContent className="p-0">
-              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{actualDailyContent.verse_of_the_day.text}"
-              </p>
-              <p className="text-sm font-semibold text-muted-foreground mt-2">
-                — {actualDailyContent.verse_of_the_day.reference}
-              </p>
-              {actualDailyContent.verse_of_the_day.explanation && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {actualDailyContent.verse_of_the_day.explanation}
-                </p>
-              )}
-              {actualDailyContent.verse_of_the_day.url_audio && (isPro ? (
-                <AudioPlayer src={actualDailyContent.verse_of_the_day.url_audio} className="mt-4" />
-              ) : (
-                <ProAudioPlaceholder className="mt-4" />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Daily Study */}
-        {actualDailyContent.daily_study && (
-          <Card className="p-4 space-y-2">
-            <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" /> Estudo Diário
-              </CardTitle>
-              {getTaskCompletionIcon('daily_study')}
-            </CardHeader>
-            <CardContent className="p-0">
-              <h3 className="text-xl font-bold text-primary/90 mb-2">{actualDailyContent.daily_study.title}</h3>
-              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{actualDailyContent.daily_study.text}"
-              </p>
-              {actualDailyContent.daily_study.auxiliar_text && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {actualDailyContent.daily_study.auxiliar_text}
-                </p>
-              )}
-              {actualDailyContent.daily_study.tags && actualDailyContent.daily_study.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {actualDailyContent.daily_study.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium">
-                      {tag.toUpperCase()}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {actualDailyContent.daily_study.url_audio && (isPro ? (
-                <AudioPlayer src={actualDailyContent.daily_study.url_audio} className="mt-4" />
-              ) : (
-                <ProAudioPlaceholder className="mt-4" />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick Reflection */}
-        {actualDailyContent.quick_reflection && (
-          <Card className="p-4 space-y-2">
-            <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-primary" /> Reflexão Rápida
-              </CardTitle>
-              {getTaskCompletionIcon('quick_reflection')}
-            </CardHeader>
-            <CardContent className="p-0">
-              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{actualDailyContent.quick_reflection.text}"
-              </p>
-              {actualDailyContent.quick_reflection.auxiliar_text && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {actualDailyContent.quick_reflection.auxiliar_text}
-                </p>
-              )}
-              {actualDailyContent.quick_reflection.url_audio && (isPro ? (
-                <AudioPlayer src={actualDailyContent.quick_reflection.url_audio} className="mt-4" />
-              ) : (
-                <ProAudioPlaceholder className="mt-4" />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Inspirational Quote */}
-        {actualDailyContent.inspirational_quotes && (
-          <Card className="p-4 space-y-2">
-            <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" /> Citação Inspiradora
-              </CardTitle>
-              {getTaskCompletionIcon('inspirational_quotes')}
-            </CardHeader>
-            <CardContent className="p-0">
-              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{actualDailyContent.inspirational_quotes.text}"
-              </p>
-              {actualDailyContent.inspirational_quotes.url_audio && (isPro ? (
-                <AudioPlayer src={actualDailyContent.inspirational_quotes.url_audio} className="mt-4" />
-              ) : (
-                <ProAudioPlaceholder className="mt-4" />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* My Prayer */}
-        {actualDailyContent.my_prayer && (
-          <Card className="p-4 space-y-2">
-            <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Heart className="h-5 w-5 text-primary" /> Oração do Dia
-              </CardTitle>
-              {getTaskCompletionIcon('my_prayer')}
-            </CardHeader>
-            <CardContent className="p-0">
-              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{actualDailyContent.my_prayer.text}"
-              </p>
-              {actualDailyContent.my_prayer.auxiliar_text && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {actualDailyContent.my_prayer.auxiliar_text}
-                </p>
-              )}
-              {actualDailyContent.my_prayer.url_audio && (isPro ? (
-                <AudioPlayer src={actualDailyContent.my_prayer.url_audio} className="mt-4" />
-              ) : (
-                <ProAudioPlaceholder className="mt-4" />
-              ))}
-            </CardContent>
-          </Card>
-        )}
+      {/* Indicador de Progresso Diário */}
+      <div className="w-full space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
+          <span className="text-sm text-muted-foreground">
+            {completedTasksCount} de {totalTasksCount} tarefas ({historyProgressPercentage.toFixed(0)}%)
+          </span>
+        </div>
+        <Progress value={historyProgressPercentage} className="h-2.5" />
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-4">
+          {availableTabs.map(tab => (
+            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1 text-xs sm:text-sm">
+              {getTaskCompletionIcon(tab.id)}
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <div className="flex-grow overflow-y-auto">
+          {availableTabs.map(tab => (
+            <TabsContent key={tab.id} value={tab.id} className="mt-0">
+              <Card className="p-4 space-y-2">
+                <CardHeader className="p-0 pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <tab.icon className="h-5 w-5 text-primary" /> {tab.label}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {tab.id === 'verse_of_the_day' && tab.content && (
+                    <>
+                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                        "{tab.content.text}"
+                      </p>
+                      <p className="text-sm font-semibold text-muted-foreground mt-2">
+                        — {tab.content.reference}
+                      </p>
+                      {tab.content.explanation && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.explanation}
+                        </p>
+                      )}
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                      ) : (
+                        <ProAudioPlaceholder className="mt-4" />
+                      ))}
+                    </>
+                  )}
+                  {tab.id === 'daily_study' && tab.content && (
+                    <>
+                      <h3 className="text-xl font-bold text-primary/90 mb-2">{tab.content.title}</h3>
+                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                        "{tab.content.text}"
+                      </p>
+                      {tab.content.auxiliar_text && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.auxiliar_text}
+                        </p>
+                      )}
+                      {tab.content.tags && tab.content.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {tab.content.tags.map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium">
+                              {tag.toUpperCase()}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                      ) : (
+                        <ProAudioPlaceholder className="mt-4" />
+                      ))}
+                    </>
+                  )}
+                  {tab.id === 'quick_reflection' && tab.content && (
+                    <>
+                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                        "{tab.content.text}"
+                      </p>
+                      {tab.content.auxiliar_text && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.auxiliar_text}
+                        </p>
+                      )}
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                      ) : (
+                        <ProAudioPlaceholder className="mt-4" />
+                      ))}
+                    </>
+                  )}
+                  {tab.id === 'inspirational_quotes' && tab.content && (
+                    <>
+                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                        "{tab.content.text}"
+                      </p>
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                      ) : (
+                        <ProAudioPlaceholder className="mt-4" />
+                      ))}
+                    </>
+                  )}
+                  {tab.id === 'my_prayer' && tab.content && (
+                    <>
+                      <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                        "{tab.content.text}"
+                      </p>
+                      {tab.content.auxiliar_text && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.auxiliar_text}
+                        </p>
+                      )}
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
+                      ) : (
+                        <ProAudioPlaceholder className="mt-4" />
+                      ))}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </div>
+      </Tabs>
 
       <div className="flex justify-center py-4 flex-shrink-0">
         <Button onClick={() => navigate('/today')} className="w-full">
