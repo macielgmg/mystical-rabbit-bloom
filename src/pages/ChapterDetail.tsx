@@ -271,7 +271,7 @@ const ChapterDetail = () => {
         {/* Botão Voltar ao Estudo (para a página de detalhes do estudo) */}
         <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)} className="flex-1">
             <BookOpen className="mr-2 h-4 w-4" />
-            Voltar
+            Estudos
         </Button>
         
         {/* Botão Avançar (para próximo capítulo ou finalizar) */}
