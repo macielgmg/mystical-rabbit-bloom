@@ -31,7 +31,7 @@ export const DailyStudyTask = ({ initialIsCompleted, tags, className }: DailyStu
     <div
       onClick={handleCardClick}
       className={cn(
-        "w-full p-4 rounded-2xl text-left transition-all duration-500 ease-in-out cursor-pointer overflow-hidden relative",
+        "w-full p-4 rounded-2xl text-left transition-all duration-500 ease-in-out cursor-pointer relative",
         "bg-gradient-to-br from-blue-100 to-blue-200 text-gray-800 shadow-lg",
         initialIsCompleted && "opacity-80",
         className
@@ -47,9 +47,18 @@ export const DailyStudyTask = ({ initialIsCompleted, tags, className }: DailyStu
       </div>
 
       {tags && tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1"> {/* Removido flex-nowrap e max-w */}
+        <div 
+          className={cn(
+            "mt-2 flex gap-1",
+            !isExpanded ? "flex-nowrap overflow-hidden max-h-[24px]" : "flex-wrap" // Ajuste aqui
+          )}
+        >
           {tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium flex-shrink-0">
+            <Badge 
+              key={index} 
+              variant="secondary" 
+              className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium flex-shrink-0 whitespace-nowrap" // Adicionado whitespace-nowrap
+            >
               {tag.toUpperCase()}
             </Badge>
           ))}
