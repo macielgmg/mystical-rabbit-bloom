@@ -30,6 +30,7 @@ export const useDailyTasksProgress = () => {
     enabled: !!userId,
   });
 
+  // O Versículo do Dia não será mais contado no progresso da "Jornada Diária"
   const { data: isVerseOfTheDayTaskCompleted, isLoading: loadingVerseOfTheDayTask } = useQuery({
     queryKey: ['verseOfTheDayTaskStatus', userId],
     queryFn: () => fetchTaskStatus(userId!, 'verse_of_the_day'),
@@ -60,10 +61,10 @@ export const useDailyTasksProgress = () => {
     enabled: !!userId,
   });
 
-  const totalDailyTasks = 6; // Corrigido para 6 tarefas
+  // Agora, totalDailyTasks é 5, excluindo o Versículo do Dia
+  const totalDailyTasks = 5; 
   const completedDailyTasksCount = [
     isJournalCompleted,
-    isVerseOfTheDayTaskCompleted,
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
@@ -74,7 +75,8 @@ export const useDailyTasksProgress = () => {
     ? (completedDailyTasksCount / totalDailyTasks) * 100 
     : 0;
 
-  const isLoadingAnyDailyTask = loadingJournal || loadingVerseOfTheDayTask || loadingDailyStudyTask || loadingQuickReflectionTask || loadingInspirationalQuoteTask || loadingMyPrayerTask;
+  // Apenas as tarefas da "Jornada Diária" afetam o estado de carregamento
+  const isLoadingAnyDailyTask = loadingJournal || loadingDailyStudyTask || loadingQuickReflectionTask || loadingInspirationalQuoteTask || loadingMyPrayerTask;
 
   return {
     completedDailyTasksCount,
@@ -82,7 +84,7 @@ export const useDailyTasksProgress = () => {
     dailyProgressPercentage,
     isLoadingAnyDailyTask,
     isJournalCompleted,
-    isVerseOfTheDayTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Mantido para que o componente VerseOfTheDayTask possa usá-lo
     isDailyStudyTaskCompleted,
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
