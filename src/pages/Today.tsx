@@ -79,7 +79,7 @@ const fetchContentTemplates = async (contentType: string, userTags: string[]): P
 };
 
 const Today = () => {
-  const { session, fullName, avatarUrl, preferences, quizResponses } = useSession();
+  const { session, fullName, avatarUrl, preferences, quizResponses, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
@@ -392,21 +392,29 @@ const Today = () => {
               <DailyStudyTask
                 initialIsCompleted={isDailyStudyTaskCompleted || false}
                 tags={actualDailyContent?.daily_study?.tags || null}
+                audioUrl={actualDailyContent?.daily_study?.url_audio || null}
+                isProUser={isPro}
                 className="mb-4"
               />
               <QuickReflectionTask
                 initialIsCompleted={isQuickReflectionTaskCompleted || false}
                 contentSnippet={actualDailyContent?.quick_reflection?.text || null}
+                audioUrl={actualDailyContent?.quick_reflection?.url_audio || null}
+                isProUser={isPro}
                 className="mb-4"
               />
               <InspirationalQuoteTask
                 initialIsCompleted={isInspirationalQuoteTaskCompleted || false}
                 contentSnippet={actualDailyContent?.inspirational_quotes?.text || null}
+                audioUrl={actualDailyContent?.inspirational_quotes?.url_audio || null}
+                isProUser={isPro}
                 className="mb-4"
               />
               <MyPrayerTask
                 initialIsCompleted={isMyPrayerTaskCompleted || false}
                 contentSnippet={actualDailyContent?.my_prayer?.text || null}
+                audioUrl={actualDailyContent?.my_prayer?.url_audio || null}
+                isProUser={isPro}
                 className="mb-4"
               />
             </div>

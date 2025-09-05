@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lightbulb, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AudioTaskIndicator } from './AudioTaskIndicator'; // Importar o novo componente
 
 interface QuickReflectionTaskProps {
   initialIsCompleted: boolean;
   contentSnippet: string | null;
+  audioUrl: string | null; // Adicionado
+  isProUser: boolean; // Adicionado
   className?: string;
 }
 
-export const QuickReflectionTask = ({ initialIsCompleted, contentSnippet, className }: QuickReflectionTaskProps) => {
+export const QuickReflectionTask = ({ initialIsCompleted, contentSnippet, audioUrl, isProUser, className }: QuickReflectionTaskProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
 
@@ -39,6 +42,7 @@ export const QuickReflectionTask = ({ initialIsCompleted, contentSnippet, classN
           <Lightbulb className="h-5 w-5 text-black/70" />
           <span className="font-bold text-sm">REFLEXÃO RÁPIDA</span>
           <span className="text-xs text-black/60 font-semibold">• 2MIN</span>
+          {audioUrl && <AudioTaskIndicator audioUrl={audioUrl} isProUser={isProUser} />} {/* Adicionado */}
         </div>
         {initialIsCompleted && <span className="font-bold text-xs text-black/70">FEITO</span>}
       </div>

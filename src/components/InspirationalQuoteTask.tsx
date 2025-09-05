@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AudioTaskIndicator } from './AudioTaskIndicator'; // Importar o novo componente
 
 interface InspirationalQuoteTaskProps {
   initialIsCompleted: boolean;
   contentSnippet: string | null;
+  audioUrl: string | null; // Adicionado
+  isProUser: boolean; // Adicionado
   className?: string;
 }
 
-export const InspirationalQuoteTask = ({ initialIsCompleted, contentSnippet, className }: InspirationalQuoteTaskProps) => {
+export const InspirationalQuoteTask = ({ initialIsCompleted, contentSnippet, audioUrl, isProUser, className }: InspirationalQuoteTaskProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
 
@@ -39,6 +42,7 @@ export const InspirationalQuoteTask = ({ initialIsCompleted, contentSnippet, cla
           <Sparkles className="h-5 w-5 text-black/70" />
           <span className="font-bold text-sm">CITAÇÃO INSPIRADORA</span>
           <span className="text-xs text-black/60 font-semibold">• 1MIN</span>
+          {audioUrl && <AudioTaskIndicator audioUrl={audioUrl} isProUser={isProUser} />} {/* Adicionado */}
         </div>
         {initialIsCompleted && <span className="font-bold text-xs text-black/70">FEITO</span>}
       </div>

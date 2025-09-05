@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowUpRight } from 'lucide-react'; // Alterado para BookOpen
 import { cn } from '@/lib/utils';
+import { AudioTaskIndicator } from './AudioTaskIndicator'; // Importar o novo componente
 
 interface VerseOfTheDayTaskProps {
   initialIsCompleted: boolean;
+  audioUrl: string | null; // Adicionado
+  isProUser: boolean; // Adicionado
 }
 
-export const VerseOfTheDayTask = ({ initialIsCompleted }: VerseOfTheDayTaskProps) => {
+export const VerseOfTheDayTask = ({ initialIsCompleted, audioUrl, isProUser }: VerseOfTheDayTaskProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
 
@@ -36,6 +39,7 @@ export const VerseOfTheDayTask = ({ initialIsCompleted }: VerseOfTheDayTaskProps
           <BookOpen className="h-5 w-5 text-black/70" /> {/* Novo ícone */}
           <span className="font-bold text-sm">VERSÍCULO DO DIA</span> {/* Novo texto */}
           <span className="text-xs text-black/60 font-semibold">• 5MIN</span>
+          {audioUrl && <AudioTaskIndicator audioUrl={audioUrl} isProUser={isProUser} />} {/* Adicionado */}
         </div>
         {initialIsCompleted && <span className="font-bold text-xs text-black/70">FEITO</span>}
       </div>
