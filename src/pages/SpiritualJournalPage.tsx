@@ -5,7 +5,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // showSuccess removido
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
@@ -92,7 +92,7 @@ const SpiritualJournalPage = () => {
       if (error) {
         throw error;
       }
-      showSuccess("Progresso salvo!");
+      // showSuccess("Progresso salvo!"); // Removido
       
       // Invalida a query para atualizar o status na página Today
       // e navega para a próxima tarefa ou para a página Today se for a última

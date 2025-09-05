@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Heart, Share2, CheckCircle } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // showSuccess removido
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,7 +136,7 @@ const MyPrayerPage = () => {
       if (error) {
         throw error;
       }
-      showSuccess("Oração do dia finalizada!");
+      // showSuccess("Oração do dia finalizada!"); // Removido
       queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
       if (nextTaskPath) {

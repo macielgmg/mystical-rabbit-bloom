@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // showSuccess removido
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,7 +136,7 @@ const QuickReflectionPage = () => {
       if (error) {
         throw error;
       }
-      showSuccess("Reflexão rápida finalizada!");
+      // showSuccess("Reflexão rápida finalizada!"); // Removido
       queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
       
       if (nextTaskPath) {

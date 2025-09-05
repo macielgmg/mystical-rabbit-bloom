@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // showSuccess removido
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,7 +136,7 @@ const InspirationalQuotePage = () => {
       if (error) {
         throw error;
       }
-      showSuccess("Citação inspiradora finalizada!");
+      // showSuccess("Citação inspiradora finalizada!"); // Removido
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
       
       if (nextTaskPath) {
@@ -180,6 +180,7 @@ const InspirationalQuotePage = () => {
           <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
           <span className="text-sm text-muted-foreground">
             {completedDailyTasksCount} de {totalDailyTasks} tarefas ({dailyProgressPercentage.toFixed(0)}%)
+          </span>
           </span>
         </div>
         <Progress value={dailyProgressPercentage} className="h-2.5" />

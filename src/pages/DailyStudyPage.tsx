@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info } from 'lucide-react';
-import { showSuccess, showError } from '@/utils/toast';
+import { showError } from '@/utils/toast'; // showSuccess removido
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -151,7 +151,7 @@ const DailyStudyPage = () => {
       if (error) {
         throw error;
       }
-      showSuccess("Estudo diário finalizado!");
+      // showSuccess("Estudo diário finalizado!"); // Removido
       queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
       
       if (nextTaskPath) {
