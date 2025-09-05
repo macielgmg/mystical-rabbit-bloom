@@ -256,8 +256,8 @@ const ChapterDetail = () => {
 
   return (
     <div className="container mx-auto max-w-3xl">
-      <div className="fixed top-0 left-0 right-0 z-10 bg-background p-4 border-b border-border flex justify-between items-center max-w-3xl mx-auto">
-        {/* Botão Voltar (esquerda) */}
+      <div className="fixed top-0 left-0 right-0 z-10 bg-background p-4 border-b border-border flex justify-around items-center max-w-3xl mx-auto gap-2">
+        {/* Botão Voltar (para capítulo anterior) */}
         <Button 
           variant="ghost" 
           onClick={() => prevChapter ? navigate(`/study/${studyId}/chapter/${prevChapter.id}`) : null} 
@@ -267,20 +267,20 @@ const ChapterDetail = () => {
           Voltar
         </Button>
         
-        {/* Grupo de botões à direita */}
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)}>
-              <BookOpen className="mr-2 h-4 w-4" />
-              Voltar ao Estudo
-          </Button>
-          <Button 
-            onClick={handleAdvance} 
-            disabled={!session}
-          >
-            {nextChapter ? 'Avançar' : 'Finalizar Estudo'}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+        {/* Botão Voltar ao Estudo (para a página de detalhes do estudo) */}
+        <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            Voltar ao Estudo
+        </Button>
+        
+        {/* Botão Avançar (para próximo capítulo ou finalizar) */}
+        <Button 
+          onClick={handleAdvance} 
+          disabled={!session}
+        >
+          {nextChapter ? 'Avançar' : 'Finalizar Estudo'}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
       <Card className="mt-20"> {/* Adicionado mt-20 para compensar a barra fixa */}
         <CardHeader>
