@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { Progress } from '@/components/ui/progress'; // Importar Progress
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { format } from 'date-fns'; // Importar format para a data
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -19,13 +22,15 @@ const SpiritualJournalPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
+
   useEffect(() => {
     const fetchInitialState = async () => {
       if (!session) {
         setLoading(false);
         return;
       }
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('daily_tasks_progress')
         .select('value')
@@ -48,29 +53,36 @@ const SpiritualJournalPage = () => {
       return;
     }
     setIsSaving(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = format(new Date(), 'yyyy-MM-dd');
     const newValue = spiritualState[0];
 
-    const { error } = await supabase
-      .from('daily_tasks_progress')
-      .upsert({
-        user_id: session.user.id,
-        task_name: 'spiritual_journal',
-        task_date: today,
-        value: newValue,
-      }, { onConflict: 'user_id,task_name,task_date' });
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: session.user.id,
+          task_name: 'spiritual_journal',
+          task_date: today,
+          value: newValue,
+        }, { onConflict: 'user_id,task_name,task_date' });
 
-    if (error) {
-      showError("Erro ao salvar seu progresso.");
-      console.error(error);
-      setIsSaving(false);
-    } else {
+      if (error) {
+        throw error;
+      }
       showSuccess("Progresso salvo!");
+      // Invalida a query para atualizar o status na página Today
+      // Não é necessário invalidar aqui, pois o useDailyTasksProgress já faz isso
+      // e a navegação para /today fará com que o Today.tsx refetch.
       navigate('/today');
+    } catch (error: any) {
+      showError("Erro ao salvar seu progresso: " + error.message);
+      console.error("Erro ao salvar progresso:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingAnyDailyTask) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -79,8 +91,8 @@ const SpiritualJournalPage = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4"> {/* Adicionado p-4 de volta para padding geral */}
-      <header className="relative flex items-center justify-center pb-4"> {/* Removido py-4 e mb-4, mantido pb-4 para espaçamento */}
+    <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4">
+      <header className="relative flex items-center justify-center py-4 mb-4">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -92,7 +104,16 @@ const SpiritualJournalPage = () => {
         <h1 className="text-xl font-bold text-primary">Diário Espiritual</h1>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center items-center text-center gap-6"> {/* Usando gap-6 para espaçamento interno */}
+      {/* Indicador de Progresso Diário */}
+      <div className="w-full space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
+          <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+        </div>
+        <Progress value={dailyProgressPercentage} className="h-2.5" />
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center items-center text-center gap-6">
         <p className="text-2xl font-semibold text-primary/90">Como está seu relacionamento com Deus hoje?</p>
         <div className="w-full max-w-sm space-y-6">
           <Slider
@@ -108,7 +129,7 @@ const SpiritualJournalPage = () => {
         </div>
       </div>
 
-      <div className="pt-4"> {/* Removido py-4, adicionado pt-4 para espaçamento */}
+      <div className="pt-4">
         <Button onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar e Concluir"}
         </Button>
