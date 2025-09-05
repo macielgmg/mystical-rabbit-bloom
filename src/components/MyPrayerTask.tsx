@@ -4,17 +4,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AudioTaskIndicator } from './AudioTaskIndicator'; // Importar o novo componente
 
 interface MyPrayerTaskProps {
   initialIsCompleted: boolean;
   contentSnippet: string | null;
-  audioUrl: string | null; // Adicionado
-  isProUser: boolean; // Adicionado
   className?: string;
 }
 
-export const MyPrayerTask = ({ initialIsCompleted, contentSnippet, audioUrl, isProUser, className }: MyPrayerTaskProps) => {
+export const MyPrayerTask = ({ initialIsCompleted, contentSnippet, className }: MyPrayerTaskProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
 
@@ -42,7 +39,6 @@ export const MyPrayerTask = ({ initialIsCompleted, contentSnippet, audioUrl, isP
           <Heart className="h-5 w-5 text-black/70" />
           <span className="font-bold text-sm">ORAÇÃO DO DIA</span>
           <span className="text-xs text-black/60 font-semibold">• 3MIN</span>
-          {audioUrl && <AudioTaskIndicator audioUrl={audioUrl} isProUser={isProUser} />} {/* Adicionado */}
         </div>
         {initialIsCompleted && <span className="font-bold text-xs text-black/70">FEITO</span>}
       </div>
