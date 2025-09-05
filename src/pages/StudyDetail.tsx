@@ -1,0 +1,220 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown } from 'lucide-react'; // Adicionado Crown e Frown
+import { useSession } from '@/contexts/SessionContext';
+import { localStudies } from '@/content/studyMetadata';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Importar AlertDialog
+
+interface Chapter {
+  id: string;
+  chapter_number: number;
+  title: string;
+  completed: boolean;
+}
+
+interface Study {
+  id: string;
+  title: string;
+  description: string;
+  is_free: boolean; // Adicionado is_free
+}
+
+const StudyDetail = () => {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { session, isPro: isUserPro } = useSession(); // Importar isUserPro
+  const navigate = useNavigate();
+  const [study, setStudy] = useState<Study | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showProAccessModal, setShowProAccessModal] = useState(false); // Estado para controlar o modal
+
+  useEffect(() => {
+    const fetchStudyData = async () => {
+      if (!studyId || !session) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const foundStudy = localStudies.find(s => s.id === studyId);
+
+      if (!foundStudy) {
+        console.error('Estudo não encontrado no arquivo local:', studyId);
+        setLoading(false);
+        return;
+      }
+      setStudy(foundStudy);
+
+      // Se o estudo não for gratuito e o usuário não for Pro, exibe o modal e não carrega o resto
+      if (!foundStudy.is_free && !isUserPro) {
+        setShowProAccessModal(true);
+        setLoading(false);
+        return;
+      }
+
+      // Otimização: Buscar o progresso de todos os capítulos de uma vez.
+      const chapterIds = foundStudy.chapters.map(c => c.id);
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('chapter_id, completed_at')
+        .eq('user_id', session.user.id)
+        .in('chapter_id', chapterIds);
+
+      if (progressError) {
+        console.error('Erro ao buscar progresso dos capítulos:', progressError);
+        // Mesmo com erro, mostramos os capítulos, mas sem progresso.
+        setChapters(foundStudy.chapters.map(c => ({ ...c, completed: false })));
+        setLoading(false);
+        return;
+      }
+
+      const completedChapterIds = new Set(
+        progressData
+          .filter(p => p.completed_at !== null)
+          .map(p => p.chapter_id)
+      );
+
+      const chaptersWithProgress = foundStudy.chapters.map(chapter => ({
+        ...chapter,
+        completed: completedChapterIds.has(chapter.id),
+      }));
+
+      setChapters(chaptersWithProgress);
+      setLoading(false);
+    };
+
+    fetchStudyData();
+  }, [studyId, session, isUserPro]); // Adicionado isUserPro como dependência
+
+  const nextChapter = React.useMemo(() => {
+    if (chapters.length === 0) return null;
+    const firstUncompleted = chapters.find(c => !c.completed);
+    if (firstUncompleted) {
+      return firstUncompleted;
+    }
+    return chapters[chapters.length - 1];
+  }, [chapters]);
+
+  const handleContinue = () => {
+    if (nextChapter) {
+      navigate(`/study/${studyId}/chapter/${nextChapter.id}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!study) {
+    return <div className="text-center">Estudo não encontrado.</div>;
+  }
+
+  // Se o modal de acesso Pro estiver visível, renderiza apenas ele
+  if (showProAccessModal) {
+    return (
+      <AlertDialog open={showProAccessModal} onOpenChange={setShowProAccessModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="flex flex-col items-center text-center">
+            <Crown className="h-16 w-16 text-yellow-500 mb-4" />
+            <AlertDialogTitle className="text-2xl font-bold text-primary">Acesso Pro Necessário</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              O estudo "{study.title}" é um conteúdo exclusivo para membros Pro.
+              Assine o plano Pro para ter acesso ilimitado a este e outros estudos premium!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-center gap-3">
+            <AlertDialogAction asChild>
+              <Button 
+                variant="outline" 
+                className="w-full sm:w-auto"
+                onClick={() => navigate('/library')} // Volta para a biblioteca
+              >
+                Voltar para Meus Estudos
+              </Button>
+            </AlertDialogAction>
+            <AlertDialogAction asChild>
+              <Button 
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  setShowProAccessModal(false);
+                  navigate('/manage-subscription');
+                }}
+              >
+                Ver Planos Pro
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  const completedChapters = chapters.filter(c => c.completed).length;
+  const totalChapters = chapters.length;
+  const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+
+  return (
+    <div className="container mx-auto max-w-3xl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl text-primary">{study.title}</CardTitle>
+          <CardDescription>{study.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-6 space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="font-semibold">Progresso</h3>
+                <span className="text-sm text-muted-foreground">{completedChapters} de {totalChapters} concluídos</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2.5">
+              <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+            </div>
+            {nextChapter && (
+              <Button onClick={handleContinue} className="w-full">
+                <PlayCircle className="mr-2 h-4 w-4" />
+                {completedChapters === totalChapters ? 'Revisar último capítulo' : 'Continuar de onde parou'}
+              </Button>
+            )}
+          </div>
+
+          <h3 className="text-xl font-bold mb-4 text-primary">Capítulos</h3>
+          <div className="space-y-3">
+            {chapters.map((chapter) => (
+              <Link
+                key={chapter.id}
+                to={`/study/${studyId}/chapter/${chapter.id}`}
+                className="block p-4 rounded-lg border bg-card hover:bg-secondary/50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {chapter.completed ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
+                    <span className="font-medium">Capítulo {chapter.chapter_number}: {chapter.title}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default StudyDetail;
