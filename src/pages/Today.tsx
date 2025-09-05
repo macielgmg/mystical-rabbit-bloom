@@ -17,6 +17,7 @@ import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { DailySummaryModal } from '@/components/DailySummaryModal'; // Importar o novo modal
+import { showError } from '@/utils/toast'; // Importar showError para feedback ao usuário
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -361,7 +362,12 @@ const Today = () => {
   };
 
   const handleDayClick = (date: Date) => {
-    setSelectedDateForSummary(date);
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    if (datesWithDailyContent.has(formattedDate)) {
+      setSelectedDateForSummary(date);
+    } else {
+      showError("Nenhum conteúdo diário disponível para esta data.");
+    }
   };
 
   const handleCloseSummaryModal = () => {
