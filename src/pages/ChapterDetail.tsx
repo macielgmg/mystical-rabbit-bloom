@@ -209,14 +209,16 @@ const ChapterDetail = () => {
     const success = await saveChapterProgress(chapterId, studyId, session.user.id, userNotes, true); // Passa studyId
 
     if (success) {
-      // Após salvar com sucesso, atualiza o estado local e verifica conquistas
+      // Após salvar com sucesso, atualiza o estado local
       setIsCompleted(true); // Marca como concluído localmente
-      const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa mais passar studyId aqui, ele busca todo o progresso
-      newAchievements.forEach((ach, index) => {
-        setTimeout(() => showAchievementToast(ach), index * 700);
-      });
+      
+      // REMOVIDO: Lógica de verificação e exibição de conquistas
+      // const newAchievements = await checkAndAwardAchievements(session.user.id);
+      // newAchievements.forEach((ach, index) => {
+      //   setTimeout(() => showAchievementToast(ach), index * 700);
+      // });
 
-      // Invalida a query de dados do perfil para que a página de Perfil recarregue as conquistas
+      // Invalida a query de dados do perfil para que a página de Perfil recarregue as conquistas (se reativadas no futuro)
       queryClient.invalidateQueries({ queryKey: ['profileData', session.user.id] });
 
       if (nextChapter) {

@@ -121,18 +121,18 @@ const Profile = () => {
     enabled: !!session?.user,
   });
 
-  // Efeito para verificar conquistas ao carregar a página de perfil
-  useEffect(() => {
-    const checkAchievementsOnLoad = async () => {
-      if (session?.user && !loading) { // Garante que a sessão e os dados básicos já foram carregados
-        const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa mais passar studyId
-        newAchievements.forEach((ach, index) => {
-          setTimeout(() => showAchievementToast(ach), index * 700);
-        });
-      }
-    };
-    checkAchievementsOnLoad();
-  }, [session, loading]); // Depende da sessão e do estado de carregamento inicial
+  // REMOVIDO: Efeito para verificar conquistas ao carregar a página de perfil
+  // useEffect(() => {
+  //   const checkAchievementsOnLoad = async () => {
+  //     if (session?.user && !loading) {
+  //       const newAchievements = await checkAndAwardAchievements(session.user.id);
+  //       newAchievements.forEach((ach, index) => {
+  //         setTimeout(() => showAchievementToast(ach), index * 700);
+  //       });
+  //     }
+  //   };
+  //   checkAchievementsOnLoad();
+  // }, [session, loading]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
