@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown } from 'lucide-react'; // Adicionado Crown e Frown
+import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { localStudies } from '@/content/studyMetadata';
 import {
@@ -15,7 +15,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Importar AlertDialog
+} from "@/components/ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { cn } from '@/lib/utils';
 
 interface Chapter {
   id: string;
@@ -28,17 +38,20 @@ interface Study {
   id: string;
   title: string;
   description: string;
-  is_free: boolean; // Adicionado is_free
+  is_free: boolean;
 }
+
+const CHAPTERS_PER_PAGE = 10; // Definindo 10 capítulos por página
 
 const StudyDetail = () => {
   const { studyId } = useParams<{ studyId: string }>();
-  const { session, isPro: isUserPro } = useSession(); // Importar isUserPro
+  const { session, isPro: isUserPro } = useSession();
   const navigate = useNavigate();
   const [study, setStudy] = useState<Study | null>(null);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [allChapters, setAllChapters] = useState<Chapter[]>([]); // Todos os capítulos
   const [loading, setLoading] = useState(true);
-  const [showProAccessModal, setShowProAccessModal] = useState(false); // Estado para controlar o modal
+  const [showProAccessModal, setShowProAccessModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1); // Estado para a página atual
 
   useEffect(() => {
     const fetchStudyData = async () => {
@@ -58,14 +71,12 @@ const StudyDetail = () => {
       }
       setStudy(foundStudy);
 
-      // Se o estudo não for gratuito e o usuário não for Pro, exibe o modal e não carrega o resto
       if (!foundStudy.is_free && !isUserPro) {
         setShowProAccessModal(true);
         setLoading(false);
         return;
       }
 
-      // Otimização: Buscar o progresso de todos os capítulos de uma vez.
       const chapterIds = foundStudy.chapters.map(c => c.id);
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
@@ -75,8 +86,7 @@ const StudyDetail = () => {
 
       if (progressError) {
         console.error('Erro ao buscar progresso dos capítulos:', progressError);
-        // Mesmo com erro, mostramos os capítulos, mas sem progresso.
-        setChapters(foundStudy.chapters.map(c => ({ ...c, completed: false })));
+        setAllChapters(foundStudy.chapters.map(c => ({ ...c, completed: false })));
         setLoading(false);
         return;
       }
@@ -92,26 +102,79 @@ const StudyDetail = () => {
         completed: completedChapterIds.has(chapter.id),
       }));
 
-      setChapters(chaptersWithProgress);
+      setAllChapters(chaptersWithProgress);
       setLoading(false);
     };
 
     fetchStudyData();
-  }, [studyId, session, isUserPro]); // Adicionado isUserPro como dependência
+  }, [studyId, session, isUserPro]);
 
   const nextChapter = React.useMemo(() => {
-    if (chapters.length === 0) return null;
-    const firstUncompleted = chapters.find(c => !c.completed);
+    if (allChapters.length === 0) return null;
+    const firstUncompleted = allChapters.find(c => !c.completed);
     if (firstUncompleted) {
       return firstUncompleted;
     }
-    return chapters[chapters.length - 1];
-  }, [chapters]);
+    return allChapters[allChapters.length - 1];
+  }, [allChapters]);
 
   const handleContinue = () => {
     if (nextChapter) {
       navigate(`/study/${studyId}/chapter/${nextChapter.id}`);
     }
+  };
+
+  // Lógica de paginação
+  const totalPages = Math.ceil(allChapters.length / CHAPTERS_PER_PAGE);
+  const startIndex = (currentPage - 1) * CHAPTERS_PER_PAGE;
+  const endIndex = startIndex + CHAPTERS_PER_PAGE;
+  const displayedChapters = allChapters.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo ao mudar de página
+    }
+  };
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5; // Número máximo de páginas visíveis diretamente
+    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key="1">
+          <PaginationLink onClick={() => handlePageChange(1)}>1</PaginationLink>
+        </PaginationItem>
+      );
+      if (startPage > 2) {
+        items.push(<PaginationItem key="ellipsis-start"><PaginationEllipsis /></PaginationItem>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink isActive={i === currentPage} onClick={() => handlePageChange(i)}>
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(<PaginationItem key="ellipsis-end"><PaginationEllipsis /></PaginationItem>);
+      }
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink onClick={() => handlePageChange(totalPages)}>{totalPages}</PaginationLink>
+        </PaginationItem>
+      );
+    }
+    return items;
   };
 
   if (loading) {
@@ -126,7 +189,6 @@ const StudyDetail = () => {
     return <div className="text-center">Estudo não encontrado.</div>;
   }
 
-  // Se o modal de acesso Pro estiver visível, renderiza apenas ele
   if (showProAccessModal) {
     return (
       <AlertDialog open={showProAccessModal} onOpenChange={setShowProAccessModal}>
@@ -144,7 +206,7 @@ const StudyDetail = () => {
               <Button 
                 variant="outline" 
                 className="w-full sm:w-auto"
-                onClick={() => navigate('/library')} // Volta para a biblioteca
+                onClick={() => navigate('/library')}
               >
                 Voltar para Meus Estudos
               </Button>
@@ -166,8 +228,8 @@ const StudyDetail = () => {
     );
   }
 
-  const completedChapters = chapters.filter(c => c.completed).length;
-  const totalChapters = chapters.length;
+  const completedChapters = allChapters.filter(c => c.completed).length;
+  const totalChapters = allChapters.length;
   const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
 
   return (
@@ -196,7 +258,7 @@ const StudyDetail = () => {
 
           <h3 className="text-xl font-bold mb-4 text-primary">Capítulos</h3>
           <div className="space-y-3">
-            {chapters.map((chapter) => (
+            {displayedChapters.map((chapter) => (
               <Link
                 key={chapter.id}
                 to={`/study/${studyId}/chapter/${chapter.id}`}
@@ -211,6 +273,20 @@ const StudyDetail = () => {
               </Link>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <Pagination className="mt-8">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
+                </PaginationItem>
+                {renderPaginationItems()}
+                <PaginationItem>
+                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </CardContent>
       </Card>
     </div>
