@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, Headphones } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, Share2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
+import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
 
 const MyPrayerPage = () => {
   const navigate = useNavigate();
@@ -207,14 +208,7 @@ const MyPrayerPage = () => {
 
       <div className="flex justify-between items-center py-4 gap-4">
         {prayerContent?.url_audio && (
-          <Button 
-            variant="outline" 
-            onClick={() => window.open(prayerContent.url_audio!, '_blank')} 
-            size="sm"
-            className="w-fit px-3"
-          >
-            <Headphones className="h-4 w-4 mr-2" /> Ouvir
-          </Button>
+          <AudioPlayer src={prayerContent.url_audio} className="flex-1" />
         )}
         <Button 
           variant="outline" 

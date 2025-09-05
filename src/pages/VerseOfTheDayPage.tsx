@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, Headphones } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
+import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
@@ -153,14 +154,7 @@ const VerseOfTheDayPage = () => {
 
       <div className="flex justify-center items-center py-4 gap-4">
         {verseContent?.url_audio && (
-          <Button 
-            variant="outline" 
-            onClick={() => window.open(verseContent.url_audio!, '_blank')} 
-            size="sm"
-            className="w-fit px-3"
-          >
-            <Headphones className="h-4 w-4 mr-2" /> Ouvir
-          </Button>
+          <AudioPlayer src={verseContent.url_audio} className="flex-1" />
         )}
         <Button 
           variant="outline" 
