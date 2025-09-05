@@ -25,10 +25,11 @@ import ManageSubscriptionPage from "./pages/ManageSubscriptionPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import SettingsPage from "./pages/SettingsPage";
 import DailyStudyPage from "./pages/DailyStudyPage";
-import QuickReflectionPage from "./pages/QuickReflectionPage"; // Novo import
-import InspirationalQuotePage from "./pages/InspirationalQuotePage"; // Novo import
-import MyPrayerPage from "./pages/MyPrayerPage"; // Novo import
+import QuickReflectionPage from "./pages/QuickReflectionPage";
+import InspirationalQuotePage from "./pages/InspirationalQuotePage";
+import MyPrayerPage from "./pages/MyPrayerPage";
 import AboutAppPage from "./pages/AboutAppPage";
+import AccountSecurityPage from "./pages/AccountSecurityPage"; // Import AccountSecurityPage
 
 
 const queryClient = new QueryClient();
@@ -62,23 +63,24 @@ const App = () => (
                 <Route path="/preferences" element={<PreferencesPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/about-app" element={<AboutAppPage />} />
+                <Route path="/account-security" element={<AccountSecurityPage />} /> {/* New route for AccountSecurityPage */}
                 <Route path="/study/:studyId" element={<StudyDetail />} />
                 <Route path="/study/:studyId/chapter/:chapterId" element={<ChapterDetail />} />
                 <Route path="/today" element={<Today />} />
                 <Route path="/today/spiritual-journal" element={<SpiritualJournalPage />} />
                 <Route path="/today/verse-of-the-day" element={<VerseOfTheDayPage />} />
                 <Route path="/today/daily-study" element={<DailyStudyPage />} />
-                <Route path="/today/quick-reflection" element={<QuickReflectionPage />} /> {/* Nova rota */}
-                <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} /> {/* Nova rota */}
-                <Route path="/today/my-prayer" element={<MyPrayerPage />} /> {/* Nova rota */}
+                <Route path="/today/quick-reflection" element={<QuickReflectionPage />} />
+                <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} />
+                <Route path="/today/my-prayer" element={<MyPrayerPage />} />
+                <Route path="/today/history/:date" element={<DailyHistoryPage />} /> {/* New route for DailyHistoryPage */}
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </SessionProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
 );
 
 export default App;

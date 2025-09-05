@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Flame } from 'lucide-react';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Link } from 'react-router-dom'; // Import Link
 
 interface WeekCalendarProps {
   completedContentDates: Set<string>; // Novo prop para datas com conteúdo
@@ -29,7 +30,8 @@ const WeekCalendar = ({ completedContentDates }: WeekCalendarProps) => {
       {weekDays.map((day, index) => (
         <div key={index} className="flex flex-col items-center gap-1">
           <span className="text-xs font-medium text-muted-foreground">{day.dayInitial}</span>
-          <div
+          <Link 
+            to={`/today/history/${format(day.date, 'yyyy-MM-dd')}`} // Navigate to new history page
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
               day.isCurrentDay
@@ -44,7 +46,7 @@ const WeekCalendar = ({ completedContentDates }: WeekCalendarProps) => {
             ) : (
               <span className="text-xs font-semibold">{day.dayOfMonth}</span>
             )}
-          </div>
+          </Link>
         </div>
       ))}
     </div>
