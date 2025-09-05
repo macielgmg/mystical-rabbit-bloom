@@ -20,10 +20,11 @@ import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
-  const { session, preferences } = useSession();
+  const { session, preferences, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
   const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -296,9 +297,11 @@ const DailyStudyPage = () => {
               </CardContent>
             </Card>
 
-            {studyContent.url_audio && (
+            {studyContent.url_audio && (isPro ? (
               <AudioPlayer src={studyContent.url_audio} className="mb-4" />
-            )}
+            ) : (
+              <ProAudioPlaceholder className="mb-4" />
+            ))}
 
             {/* Seção "Por que este estudo?" agora colapsável e menor */}
             <Accordion type="single" collapsible className="w-full">

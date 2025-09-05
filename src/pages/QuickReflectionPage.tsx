@@ -13,10 +13,11 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
 
 const QuickReflectionPage = () => {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
   const [reflectionContent, setReflectionContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -216,9 +217,11 @@ const QuickReflectionPage = () => {
         )}
       </div>
 
-      {reflectionContent?.url_audio && (
+      {reflectionContent?.url_audio && (isPro ? (
         <AudioPlayer src={reflectionContent.url_audio} className="mb-4" />
-      )}
+      ) : (
+        <ProAudioPlaceholder className="mb-4" />
+      ))}
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}

@@ -13,10 +13,11 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, isPro } = useSession(); // Adicionado isPro
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,9 +222,11 @@ const VerseOfTheDayPage = () => {
         )}
       </div>
 
-      {verseContent?.url_audio && (
+      {verseContent?.url_audio && (isPro ? (
         <AudioPlayer src={verseContent.url_audio} className="mb-4" />
-      )}
+      ) : (
+        <ProAudioPlaceholder className="mb-4" />
+      ))}
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}
