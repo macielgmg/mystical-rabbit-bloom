@@ -257,6 +257,7 @@ const ChapterDetail = () => {
   return (
     <div className="container mx-auto max-w-3xl">
       <div className="flex justify-between items-center mb-4">
+        {/* Botão Voltar (esquerda) */}
         <Button 
           variant="ghost" 
           onClick={() => prevChapter ? navigate(`/study/${studyId}/chapter/${prevChapter.id}`) : null} 
@@ -265,17 +266,21 @@ const ChapterDetail = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
-        <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)}>
-            <BookOpen className="mr-2 h-4 w-4" />
-            Voltar ao Estudo
-        </Button>
-        <Button 
-          onClick={handleAdvance} 
-          disabled={!session}
-        >
-          {nextChapter ? 'Avançar' : 'Finalizar Estudo'}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        
+        {/* Grupo de botões à direita */}
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => navigate(`/study/${studyId}`)}>
+              <BookOpen className="mr-2 h-4 w-4" />
+              Voltar ao Estudo
+          </Button>
+          <Button 
+            onClick={handleAdvance} 
+            disabled={!session}
+          >
+            {nextChapter ? 'Avançar' : 'Finalizar Estudo'}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <Card>
         <CardHeader>
