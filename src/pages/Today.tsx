@@ -7,7 +7,7 @@ import { SpiritualJournalTask } from '@/components/SpiritualJournalTask';
 import { DailyStudyTask } from '@/components/DailyStudyTask';
 import WeekCalendar from '@/components/WeekCalendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { VerseOfTheDay } from '@/components/VerseOfTheDay';
 import { QuickReflectionTask } from '@/components/QuickReflectionTask';
 import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask';
@@ -15,7 +15,7 @@ import { MyPrayerTask } from '@/components/MyPrayerTask';
 import { format, isSameDay, parseISO } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
-import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -336,12 +336,12 @@ const Today = () => {
   return (
     <div className="container mx-auto max-w-2xl h-full flex flex-col space-y-4">
       <Card className="flex-shrink-0">
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-3 space-y-3"> {/* Reduzido de p-4 space-y-4 */}
           <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-12 w-12 bg-gradient-to-br from-green-200 to-blue-200">
+            <div className="flex items-center gap-3"> {/* Reduzido de gap-4 */}
+              <Avatar className="h-10 w-10 bg-gradient-to-br from-green-200 to-blue-200"> {/* Reduzido de h-12 w-12 */}
                 <AvatarImage src={avatarUrl || undefined} alt="Foto do perfil" />
-                <AvatarFallback className="text-xl font-bold text-primary bg-transparent">
+                <AvatarFallback className="text-lg font-bold text-primary bg-transparent"> {/* Reduzido de text-xl */}
                   {getInitials(fullName)}
                 </AvatarFallback>
               </Avatar>
@@ -350,17 +350,17 @@ const Today = () => {
                 <p className="text-sm text-muted-foreground">O amor de Deus em detalhes</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2"> {/* Reduzido de gap-3 */}
               <div className="flex items-center gap-1 text-primary font-bold">
-                <Flame className="h-5 w-5 text-orange-500" />
+                <Flame className="h-4 w-4 text-orange-500" /> {/* Reduzido de h-5 w-5 */}
                 <span>{isLoadingAny ? <Loader2 className="h-4 w-4 animate-spin" /> : (streakData?.streak_count || 0)}</span>
               </div>
-              <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" /> {/* Reduzido de h-5 w-5 */}
             </div>
           </div>
           <WeekCalendar />
           {/* Indicador de Progresso Diário */}
-          <div className="w-full space-y-2 pt-4 border-t border-muted-foreground/20">
+          <div className="w-full space-y-2 pt-3 border-t border-muted-foreground/20"> {/* Reduzido de pt-4 */}
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
               <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
