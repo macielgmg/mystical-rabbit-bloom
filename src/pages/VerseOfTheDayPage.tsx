@@ -168,18 +168,19 @@ const VerseOfTheDayPage = () => {
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          className="flex-1 max-w-[150px]" // Botão de compartilhar menor
+          size="sm" // Torna o botão menor
+          className="w-fit px-3" // Ajusta a largura para o conteúdo e adiciona padding horizontal
           disabled={!verseContent}
         >
-          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+          <Share2 className="h-4 w-4" /> {/* Remove mr-2 para deixar apenas o ícone */}
         </Button>
         <Button 
           onClick={handleCompleteVerse} 
-          className="flex-1" // Botão de finalizar maior
+          className="flex-1" // Faz o botão ocupar o espaço restante
           disabled={isCompleting || !verseContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-          Finalizar Estudo
+          Finalizar Versículo
         </Button>
       </div>
     </div>

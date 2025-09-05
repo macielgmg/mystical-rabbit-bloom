@@ -165,14 +165,15 @@ const InspirationalQuotePage = () => {
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          className="flex-1 max-w-[150px]"
+          size="sm" // Torna o botão menor
+          className="w-fit px-3" // Ajusta a largura para o conteúdo e adiciona padding horizontal
           disabled={!quoteContent}
         >
-          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+          <Share2 className="h-4 w-4" /> {/* Remove mr-2 para deixar apenas o ícone */}
         </Button>
         <Button 
           onClick={handleCompleteTask} 
-          className="flex-1"
+          className="flex-1" // Faz o botão ocupar o espaço restante
           disabled={isCompleting || !quoteContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}

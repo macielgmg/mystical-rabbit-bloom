@@ -223,7 +223,7 @@ const DailyStudyPage = () => {
                       <Badge 
                         key={index} 
                         variant="secondary" 
-                        className="bg-primary/10 text-primary border-none px-2 py-0.5 text-xs font-medium flex-shrink-0 whitespace-nowrap"
+                        className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium flex-shrink-0 whitespace-nowrap"
                       >
                         <Tag className="h-3 w-3 mr-1" /> {showAllTags ? tag.toUpperCase() : truncateTag(tag.toUpperCase(), 12)}
                       </Badge>
@@ -296,14 +296,15 @@ const DailyStudyPage = () => {
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          className="flex-1 max-w-[150px]"
+          size="sm" // Torna o botão menor
+          className="w-fit px-3" // Ajusta a largura para o conteúdo e adiciona padding horizontal
           disabled={!studyContent}
         >
-          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+          <Share2 className="h-4 w-4" /> {/* Remove mr-2 para deixar apenas o ícone */}
         </Button>
         <Button 
           onClick={handleCompleteStudy} 
-          className="flex-1"
+          className="flex-1" // Faz o botão ocupar o espaço restante
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}

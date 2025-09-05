@@ -14,6 +14,7 @@ import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask'; //
 import { MyPrayerTask } from '@/components/MyPrayerTask'; // Novo import
 import { format, isSameDay, parseISO } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses"; // Fallback local
+import { Progress } from '@/components/ui/progress'; // Importar Progress
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -440,6 +441,20 @@ const Today = () => {
 
   const isLoadingAny = loadingJournal || loadingVerseOfTheDayTask || loadingDailyStudyTask || loadingStreak || loadingDailyContent || loadingQuickReflectionTask || loadingInspirationalQuoteTask || loadingMyPrayerTask;
 
+  // Cálculo do progresso diário geral
+  const totalDailyTasks = 5; // Diário Espiritual, Estudo Diário, Reflexão Rápida, Citação Inspiradora, Oração do Dia
+  const completedDailyTasksCount = [
+    isJournalCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  ].filter(Boolean).length; // Conta quantos são 'true'
+
+  const dailyProgressPercentage = totalDailyTasks > 0 
+    ? (completedDailyTasksCount / totalDailyTasks) * 100 
+    : 0;
+
   return (
     <div className="container mx-auto max-w-2xl h-full flex flex-col space-y-4">
       <Card className="flex-shrink-0">
@@ -466,6 +481,14 @@ const Today = () => {
             </div>
           </div>
           <WeekCalendar />
+          {/* Novo Indicador de Progresso Diário */}
+          <div className="w-full space-y-2 pt-4 border-t border-muted-foreground/20">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
+              <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+            </div>
+            <Progress value={dailyProgressPercentage} className="h-2.5" />
+          </div>
         </CardContent>
       </Card>
 
