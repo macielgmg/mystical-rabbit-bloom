@@ -73,6 +73,31 @@ export const localStudies: LocalStudyMetadata[] = [
         chapter_number: 10,
         title: 'Salmo 10: O Lamento pelo Oprimido',
       },
+      {
+        id: '1b2c3d4e-5f6a-4789-e012-34567890123b', // NOVO ID para Salmo 11
+        chapter_number: 11,
+        title: 'Salmo 11: Confiança Inabalável em Deus',
+      },
+      {
+        id: '2c3d4e5f-6a7b-4890-f123-45678901234c', // NOVO ID para Salmo 12
+        chapter_number: 12,
+        title: 'Salmo 12: Oração Contra a Falsidade',
+      },
+      {
+        id: '3d4e5f6a-7b8c-4901-a234-56789012345d', // NOVO ID para Salmo 13
+        chapter_number: 13,
+        title: 'Salmo 13: Do Desespero à Confiança',
+      },
+      {
+        id: '4e5f6a7b-8c9d-4012-b345-67890123456e', // NOVO ID para Salmo 14
+        chapter_number: 14,
+        title: 'Salmo 14: A Loucura da Negação de Deus',
+      },
+      {
+        id: '5f6a7b8c-9d0e-4123-c456-78901234567f', // NOVO ID para Salmo 15
+        chapter_number: 15,
+        title: 'Salmo 15: O Cidadão do Reino de Deus',
+      },
       // Adicione mais capítulos aqui conforme necessário
     ],
   },
