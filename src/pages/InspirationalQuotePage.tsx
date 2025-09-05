@@ -189,7 +189,6 @@ const InspirationalQuotePage = () => {
           <span className="text-sm text-muted-foreground">
             {completedDailyTasksCount} de {totalDailyTasks} tarefas ({dailyProgressPercentage.toFixed(0)}%)
           </span>
-          </span>
         </div>
         <Progress value={dailyProgressPercentage} className="h-2.5" />
       </div>
