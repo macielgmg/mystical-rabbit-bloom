@@ -1,78 +1,92 @@
 import { supabase } from '@/integrations/supabase/client';
 import { localStudies } from '@/content/studyMetadata';
+import { achievementDefinitions, AchievementDefinition } from './achievementDefinitions'; // Importa as definições
 
-interface Achievement {
+export interface Achievement {
   id: string;
   name: string;
   description: string;
   icon_name: string;
 }
 
-// A função agora não precisa mais do total de capítulos, ela mesma calcula.
-export const checkAndAwardAchievements = async (userId: string, studyId?: string | null): Promise<Achievement[]> => {
+export const checkAndAwardAchievements = async (userId: string): Promise<Achievement[]> => {
   try {
-    // 1. Busca todos os dados necessários do Supabase.
+    // 1. Busca todos os dados necessários do Supabase em paralelo.
     const [
-      { data: unlockedAchievementsData },
-      { data: allAchievementsData },
-      { data: userProgressData }
+      { data: unlockedAchievementsData, error: unlockedError },
+      { data: allAchievementsFromDb, error: allAchievementsError },
+      { data: userProgressData, error: userProgressError }
     ] = await Promise.all([
       supabase.from('user_achievements').select('achievement_id').eq('user_id', userId),
-      supabase.from('achievements').select('*'),
-      supabase.from('user_progress').select('chapter_id').eq('user_id', userId).not('completed_at', 'is', null)
+      supabase.from('achievements').select('*'), // Busca as definições de conquistas do DB (com IDs)
+      supabase.from('user_progress').select('chapter_id, study_id').eq('user_id', userId).not('completed_at', 'is', null)
     ]);
 
-    if (!allAchievementsData) {
-      console.error("Não foi possível buscar a lista de conquistas.");
+    if (unlockedError) throw unlockedError;
+    if (allAchievementsError) throw allAchievementsError;
+    if (userProgressError) throw userProgressError;
+
+    if (!allAchievementsFromDb) {
+      console.error("Não foi possível buscar a lista de conquistas do banco de dados.");
       return [];
     }
 
-    // 2. Prepara os dados para verificação.
     const unlockedIds = new Set(unlockedAchievementsData?.map(a => a.achievement_id) || []);
-    const allAchievementsMap = new Map(allAchievementsData.map(ach => [ach.name, ach]));
+    const allAchievementsMap = new Map(allAchievementsFromDb.map(ach => [ach.name, ach]));
     const achievementsToAward: Achievement[] = [];
 
-    const award = (achievementName: string) => {
-      const achievement = allAchievementsMap.get(achievementName);
-      if (achievement && !unlockedIds.has(achievement.id) && !achievementsToAward.some(a => a.id === achievement.id)) {
-        achievementsToAward.push(achievement);
+    // Prepara os dados para as condições das conquistas
+    const totalCompletedChapters = userProgressData?.length || 0;
+    const completedStudies = new Set<string>();
+    
+    // Mapeia capítulos concluídos por estudo para verificar estudos completos
+    const completedChaptersByStudy: { [studyId: string]: number } = {};
+    userProgressData?.forEach(progress => {
+      if (progress.study_id) {
+        completedChaptersByStudy[progress.study_id] = (completedChaptersByStudy[progress.study_id] || 0) + 1;
       }
+    });
+
+    // Verifica quais estudos foram completamente concluídos
+    localStudies.forEach(study => {
+      if (completedChaptersByStudy[study.id] === study.chapters.length) {
+        completedStudies.add(study.id);
+      }
+    });
+
+    const conditionData = {
+      totalCompletedChapters,
+      completedStudies,
+      // Adicione outros dados aqui se precisar para futuras condições de conquistas
     };
 
-    // 3. Realiza as verificações.
-    
-    // A) Conquistas baseadas no NÚMERO TOTAL de capítulos concluídos em TODOS os estudos.
-    const totalCompletedChapters = userProgressData?.length || 0;
-    if (totalCompletedChapters >= 1) award('Iniciante Fiel');
-    if (totalCompletedChapters >= 5) award('Leitor Dedicado'); // NOVA CONQUISTA
-    if (totalCompletedChapters >= 10) award('Leitor Assíduo');
-    if (totalCompletedChapters >= 50) award('Sábio Estudante');
-    if (totalCompletedChapters >= 150) award('Mestre da Palavra');
+    // 2. Itera pelas definições de conquistas e verifica as condições.
+    for (const definition of achievementDefinitions) {
+      const achievementInDb = allAchievementsMap.get(definition.name);
 
-    // B) Conquistas baseadas na CONCLUSÃO DE ESTUDOS específicos (apenas se studyId for fornecido).
-    if (studyId) {
-      const study = localStudies.find(s => s.id === studyId);
-      if (study) {
-        const studyChapterIds = new Set(study.chapters.map(c => c.id));
-        const completedChapterIdsForThisStudy = userProgressData?.map(p => p.chapter_id).filter(id => studyChapterIds.has(id)) || [];
-        
-        if (completedChapterIdsForThisStudy.length === study.chapters.length) {
-          award('Primeiro Estudo'); // Esta conquista é para completar um estudo inteiro
-        }
+      if (!achievementInDb) {
+        console.warn(`Definição de conquista "${definition.name}" não encontrada no banco de dados. Por favor, certifique-se de que ela foi inserida.`);
+        continue; // Pula se a conquista não estiver no DB
+      }
+
+      // Se a conquista não foi desbloqueada e a condição é atendida, adiciona para ser concedida
+      if (!unlockedIds.has(achievementInDb.id) && definition.checkCondition(conditionData)) {
+        achievementsToAward.push(achievementInDb);
       }
     }
 
-    // 4. Insere as novas conquistas no banco de dados, se houver alguma.
+    // 3. Insere as novas conquistas no banco de dados, se houver alguma.
     if (achievementsToAward.length > 0) {
       const newAchievementsPayload = achievementsToAward.map(ach => ({
         user_id: userId,
         achievement_id: ach.id,
+        unlocked_at: new Date().toISOString(),
       }));
 
-      const { error } = await supabase.from('user_achievements').insert(newAchievementsPayload);
+      const { error: insertError } = await supabase.from('user_achievements').insert(newAchievementsPayload);
       
-      if (error) {
-        console.error('Erro ao conceder conquistas:', error);
+      if (insertError) {
+        console.error('Erro ao conceder conquistas:', insertError);
         return [];
       }
       

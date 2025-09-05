@@ -44,6 +44,7 @@ const ChapterDetail = () => {
 
   const saveChapterProgress = useCallback(async (
     currentChapterId: string,
+    currentStudyId: string, // Adicionado currentStudyId
     userId: string,
     notes: string,
     markAsCompleted: boolean // Explicitamente indica se deve marcar como concluído
@@ -61,7 +62,7 @@ const ChapterDetail = () => {
       return false;
     }
 
-    const updateData: { notes: string; completed_at?: string | null } = { notes: notes };
+    const updateData: { notes: string; completed_at?: string | null; study_id?: string } = { notes: notes };
     
     // Se markAsCompleted for true, define completed_at para agora.
     // Se markAsCompleted for false, e já existia um completed_at, mantém. Caso contrário, null.
@@ -70,6 +71,7 @@ const ChapterDetail = () => {
     } else {
       updateData.completed_at = existingProgress?.completed_at || null;
     }
+    updateData.study_id = currentStudyId; // Sempre incluir study_id
 
     if (existingProgress) {
       const { error: updateError } = await supabase
@@ -88,6 +90,7 @@ const ChapterDetail = () => {
         .insert({ 
           user_id: userId, 
           chapter_id: currentChapterId, 
+          study_id: currentStudyId, // Inserir study_id
           notes: notes, 
           completed_at: markAsCompleted ? new Date().toISOString() : null 
         });
@@ -191,7 +194,7 @@ const ChapterDetail = () => {
     }
 
     setLoading(false);
-  }, [chapterId, studyId, session]);
+  }, [chapterId, studyId, session, saveChapterProgress]); // Adicionado saveChapterProgress como dependência
 
   useEffect(() => {
     fetchChapterAndStudyData();
@@ -200,13 +203,13 @@ const ChapterDetail = () => {
   const handleAdvance = async () => {
     if (!session || !chapterId || !studyId) return;
 
-    // Always try to mark as completed when advancing
-    const success = await saveChapterProgress(chapterId, session.user.id, userNotes, true);
+    // Sempre tenta marcar como concluído ao avançar
+    const success = await saveChapterProgress(chapterId, studyId, session.user.id, userNotes, true); // Passa studyId
 
     if (success) {
-      // After successful save, update local state and check achievements
-      setIsCompleted(true); // Mark as completed locally
-      const newAchievements = await checkAndAwardAchievements(session.user.id, studyId);
+      // Após salvar com sucesso, atualiza o estado local e verifica conquistas
+      setIsCompleted(true); // Marca como concluído localmente
+      const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa passar studyId aqui, ele busca todo o progresso
       newAchievements.forEach((ach, index) => {
         setTimeout(() => showAchievementToast(ach), index * 700);
       });
@@ -222,14 +225,13 @@ const ChapterDetail = () => {
   };
 
   const handleSaveNotes = async () => {
-    if (!session || !chapterId) return;
+    if (!session || !chapterId || !studyId) return; // Garante que studyId está disponível
 
-    // Save notes, preserving the current completion status
-    const success = await saveChapterProgress(chapterId, session.user.id, userNotes, isCompleted);
+    const success = await saveChapterProgress(chapterId, studyId, session.user.id, userNotes, isCompleted); // Passa studyId
     if (success) {
       setInitialNotes(userNotes);
       showSuccess('Anotações salvas com sucesso!');
-      fetchChapterAndStudyData(); // Re-fetch to ensure all counts are updated
+      fetchChapterAndStudyData(); // Re-busca para garantir que todas as contagens sejam atualizadas
     }
   };
 

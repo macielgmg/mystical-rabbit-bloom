@@ -125,7 +125,7 @@ const Profile = () => {
   useEffect(() => {
     const checkAchievementsOnLoad = async () => {
       if (session?.user && !loading) { // Garante que a sessão e os dados básicos já foram carregados
-        const newAchievements = await checkAndAwardAchievements(session.user.id, null); // Passa null para studyId
+        const newAchievements = await checkAndAwardAchievements(session.user.id); // Não precisa mais passar studyId
         newAchievements.forEach((ach, index) => {
           setTimeout(() => showAchievementToast(ach), index * 700);
         });
