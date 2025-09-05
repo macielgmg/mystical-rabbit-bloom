@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, Headphones } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,7 +19,6 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
-import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
@@ -288,8 +287,15 @@ const DailyStudyPage = () => {
               </CardContent>
             </Card>
 
+            {/* Botão Ouvir que abre em nova aba */}
             {studyContent.url_audio && (
-              <AudioPlayer src={studyContent.url_audio} className="mb-4" />
+              <Button 
+                variant="outline" 
+                onClick={() => window.open(studyContent.url_audio!, '_blank')} 
+                className="w-full"
+              >
+                <Headphones className="h-4 w-4 mr-2" /> Ouvir Estudo
+              </Button>
             )}
 
             {/* Seção "Por que este estudo?" agora colapsável e menor */}
