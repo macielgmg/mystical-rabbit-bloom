@@ -98,6 +98,31 @@ export const localStudies: LocalStudyMetadata[] = [
         chapter_number: 15,
         title: 'Salmo 15: O Cidadão do Reino de Deus',
       },
+      {
+        id: '6a7b8c9d-0e1f-4234-d567-89012345678g', // NOVO ID para Salmo 16
+        chapter_number: 16,
+        title: 'Salmo 16: O Senhor é Minha Porção',
+      },
+      {
+        id: '7a8b9c0d-1e2f-4345-e678-90123456789h', // NOVO ID para Salmo 17
+        chapter_number: 17,
+        title: 'Salmo 17: Oração por Proteção e Justiça',
+      },
+      {
+        id: '8a9b0c1d-2e3f-4456-f789-01234567890i', // NOVO ID para Salmo 18
+        chapter_number: 18,
+        title: 'Salmo 18: Hino de Vitória e Libertação',
+      },
+      {
+        id: '9a0b1c2d-3e4f-4567-a890-12345678901j', // NOVO ID para Salmo 19
+        chapter_number: 19,
+        title: 'Salmo 19: A Glória de Deus na Criação e na Lei',
+      },
+      {
+        id: '0a1b2c3d-4e5f-4678-b901-23456789012k', // NOVO ID para Salmo 20
+        chapter_number: 20,
+        title: 'Salmo 20: Oração por Vitória na Batalha',
+      },
       // Adicione mais capítulos aqui conforme necessário
     ],
   },
