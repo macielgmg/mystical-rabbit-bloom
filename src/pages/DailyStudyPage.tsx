@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, Headphones } from 'lucide-react'; // Adicionado Headphones
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ const DailyStudyPage = () => {
   const navigate = useNavigate();
   const { session, preferences } = useSession();
   const queryClient = useQueryClient();
-  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null } | null>(null);
+  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null>(null); // Adicionado url_audio
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
@@ -85,7 +85,7 @@ const DailyStudyPage = () => {
         // 2. Usar o ID do template para buscar o conteúdo real do template
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, title, reflection, tags')
+          .select('text_content, title, reflection, tags, url_audio') // Adicionado url_audio
           .eq('id', studyTemplateId)
           .single();
 
@@ -99,6 +99,7 @@ const DailyStudyPage = () => {
             title: templateData.title || 'Estudo Diário',
             reflection: templateData.reflection || null,
             tags: templateData.tags || null,
+            url_audio: templateData.url_audio || null, // Definido url_audio
           });
         } else {
           setStudyContent(null);
@@ -336,18 +337,28 @@ const DailyStudyPage = () => {
       </div>
 
       <div className="flex justify-between items-center py-4 gap-4 flex-shrink-0">
+        {studyContent?.url_audio && (
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(studyContent.url_audio!, '_blank')} 
+            size="sm"
+            className="w-fit px-3"
+          >
+            <Headphones className="h-4 w-4 mr-2" /> Ouvir
+          </Button>
+        )}
         <Button 
           variant="outline" 
           onClick={handleShare} 
           size="sm"
-          className="w-fit px-3"
+          className={cn("w-fit px-3", !studyContent?.url_audio && "flex-1")} // Ajusta largura se não houver botão de áudio
           disabled={!studyContent}
         >
           <Share2 className="h-4 w-4" />
         </Button>
         <Button 
           onClick={handleCompleteTask} 
-          className="flex-1"
+          className={cn("flex-1", studyContent?.url_audio && "ml-auto")} // Ajusta margem se houver botão de áudio
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (

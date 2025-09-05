@@ -3,19 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2 } from 'lucide-react'; // Removido CheckCircle
+import { ArrowLeft, Loader2, BookOpen, Share2, Headphones } from 'lucide-react'; // Adicionado Headphones
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { cn } from '@/lib/utils'; // Importar cn
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
   const queryClient = useQueryClient();
-  const [verseContent, setVerseContent] = useState<{ text: string; reference: string } | null>(null);
+  const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null); // Adicionado url_audio
   const [loading, setLoading] = useState(true);
   // Removido isCompleting, pois esta tarefa não tem botão de finalizar
 
@@ -53,7 +54,7 @@ const VerseOfTheDayPage = () => {
         // 2. Usar o ID do template para buscar o conteúdo real do template
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, reference')
+          .select('text_content, reference, url_audio') // Adicionado url_audio
           .eq('id', verseTemplateId)
           .single();
 
@@ -65,6 +66,7 @@ const VerseOfTheDayPage = () => {
           setVerseContent({
             text: templateData.text_content,
             reference: templateData.reference || 'Versículo do Dia',
+            url_audio: templateData.url_audio || null, // Definido url_audio
           });
         } else {
           setVerseContent(null); // Template não encontrado
@@ -150,18 +152,28 @@ const VerseOfTheDayPage = () => {
       </div>
 
       <div className="flex justify-center items-center py-4 gap-4"> {/* Centralizado e sem botão de finalizar */}
+        {verseContent?.url_audio && (
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(verseContent.url_audio!, '_blank')} 
+            size="sm"
+            className="w-fit px-3"
+          >
+            <Headphones className="h-4 w-4 mr-2" /> Ouvir
+          </Button>
+        )}
         <Button 
           variant="outline" 
           onClick={handleShare} 
           size="sm"
-          className="w-fit px-3"
+          className={cn("w-fit px-3", !verseContent?.url_audio && "flex-1")}
           disabled={!verseContent}
         >
           <Share2 className="h-4 w-4 mr-2" /> Compartilhar
         </Button>
         <Button 
           onClick={() => navigate('/today')} 
-          className="flex-1"
+          className={cn("flex-1", verseContent?.url_audio && "ml-auto")}
         >
           Voltar para Hoje
         </Button>

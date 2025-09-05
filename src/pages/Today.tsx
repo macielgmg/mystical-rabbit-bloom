@@ -30,11 +30,11 @@ interface DailyContentTemplateIds {
 
 // Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
-  verse_of_the_day: { text: string; reference: string; explanation: string | null } | null;
-  daily_study: { text: string; title: string | null; reflection: string | null; tags: string[] | null } | null;
-  quick_reflection: string | null;
-  inspirational_quotes: string | null;
-  my_prayer: string | null;
+  verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
+  daily_study: { text: string; title: string | null; reflection: string | null; tags: string[] | null; url_audio: string | null } | null;
+  quick_reflection: { text: string | null; url_audio: string | null } | null;
+  inspirational_quotes: { text: string | null; url_audio: string | null } | null;
+  my_prayer: { text: string | null; url_audio: string | null } | null;
 }
 
 interface DailyContentTemplate {
@@ -46,6 +46,7 @@ interface DailyContentTemplate {
   reflection: string | null;
   tags: string[] | null;
   explanation: string | null;
+  url_audio: string | null; // Adicionado url_audio
 }
 
 const fetchStreakData = async (userId: string) => {
@@ -143,11 +144,11 @@ const Today = () => {
     if (fetchError && fetchError.code !== 'PGRST116') {
       console.error("Erro ao buscar IDs de conteúdo diário:", fetchError);
       setActualDailyContent({
-        verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null },
-        daily_study: { text: "Erro ao carregar estudo diário.", title: null, reflection: null, tags: null },
-        quick_reflection: "Erro ao carregar reflexão.",
-        inspirational_quotes: "Erro ao carregar citação.",
-        my_prayer: "Erro ao carregar oração.",
+        verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null, url_audio: null },
+        daily_study: { text: "Erro ao carregar estudo diário.", title: null, reflection: null, tags: null, url_audio: null },
+        quick_reflection: { text: "Erro ao carregar reflexão.", url_audio: null },
+        inspirational_quotes: { text: "Erro ao carregar citação.", url_audio: null },
+        my_prayer: { text: "Erro ao carregar oração.", url_audio: null },
       });
       setLoadingDailyContent(false);
       return;
@@ -202,11 +203,11 @@ const Today = () => {
       if (upsertError) {
         console.error("Erro ao upsert conteúdo diário personalizado:", upsertError);
         setActualDailyContent({
-          verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null },
-          daily_study: { text: "Erro ao carregar estudo diário.", title: null, reflection: null, tags: null },
-          quick_reflection: "Erro ao carregar reflexão.",
-          inspirational_quotes: "Erro ao carregar citação.",
-          my_prayer: "Erro ao carregar oração.",
+          verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null, url_audio: null },
+          daily_study: { text: "Erro ao carregar estudo diário.", title: null, reflection: null, tags: null, url_audio: null },
+          quick_reflection: { text: "Erro ao carregar reflexão.", url_audio: null },
+          inspirational_quotes: { text: "Erro ao carregar citação.", url_audio: null },
+          my_prayer: { text: "Erro ao carregar oração.", url_audio: null },
         });
         setLoadingDailyContent(false);
         return;
@@ -230,7 +231,7 @@ const Today = () => {
         if (templateId) {
           contentPromises.push(
             supabase.from('daily_content_templates')
-              .select('text_content, reference, title, reflection, tags, explanation')
+              .select('text_content, reference, title, reflection, tags, explanation, url_audio') // Adicionado url_audio
               .eq('id', templateId)
               .single()
               .then(({ data, error }) => {
@@ -239,14 +240,14 @@ const Today = () => {
                   return null;
                 }
                 if (key === 'verse_of_the_day' && data) {
-                  return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null };
+                  return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
                 }
                 if (key === 'daily_study' && data) {
-                    return { text: data.text_content, title: data.title || null, reflection: data.reflection || null, tags: data.tags || null };
+                    return { text: data.text_content, title: data.title || null, reflection: data.reflection || null, tags: data.tags || null, url_audio: data.url_audio || null };
                 }
-                // Para quick_reflection, inspirational_quotes, my_prayer, retornamos apenas o text_content (string)
+                // Para quick_reflection, inspirational_quotes, my_prayer, retornamos um objeto com text_content e url_audio
                 if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(key) && data) {
-                    return data.text_content; // Retorna apenas a string
+                    return { text: data.text_content, url_audio: data.url_audio || null };
                 }
                 return null; // Fallback
               })
@@ -264,7 +265,7 @@ const Today = () => {
     } else {
       const localVerse = getVerseOfTheDay();
       setActualDailyContent({
-        verse_of_the_day: { ...localVerse, explanation: "Este é um versículo padrão. Uma explicação mais detalhada estaria disponível com conteúdo dinâmico." },
+        verse_of_the_day: { ...localVerse, explanation: "Este é um versículo padrão. Uma explicação mais detalhada estaria disponível com conteúdo dinâmico.", url_audio: null },
         daily_study: null,
         quick_reflection: null,
         inspirational_quotes: null,
@@ -395,17 +396,17 @@ const Today = () => {
               />
               <QuickReflectionTask
                 initialIsCompleted={isQuickReflectionTaskCompleted || false}
-                contentSnippet={actualDailyContent?.quick_reflection || null}
+                contentSnippet={actualDailyContent?.quick_reflection?.text || null}
                 className="mb-4"
               />
               <InspirationalQuoteTask
                 initialIsCompleted={isInspirationalQuoteTaskCompleted || false}
-                contentSnippet={actualDailyContent?.inspirational_quotes || null}
+                contentSnippet={actualDailyContent?.inspirational_quotes?.text || null}
                 className="mb-4"
               />
               <MyPrayerTask
                 initialIsCompleted={isMyPrayerTaskCompleted || false}
-                contentSnippet={actualDailyContent?.my_prayer || null}
+                contentSnippet={actualDailyContent?.my_prayer?.text || null}
                 className="mb-4"
               />
             </div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Heart, Share2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, Headphones } from 'lucide-react'; // Adicionado Headphones
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,12 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
+import { cn } from '@/lib/utils'; // Importar cn
 
 const MyPrayerPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
   const queryClient = useQueryClient();
-  const [prayerContent, setPrayerContent] = useState<string | null>(null);
+  const [prayerContent, setPrayerContent] = useState<{ text: string | null; url_audio: string | null } | null>(null); // Adicionado url_audio
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -74,7 +75,7 @@ const MyPrayerPage = () => {
       if (prayerTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content')
+          .select('text_content, url_audio') // Adicionado url_audio
           .eq('id', prayerTemplateId)
           .single();
 
@@ -83,7 +84,7 @@ const MyPrayerPage = () => {
           showError("Erro ao carregar o conteúdo da oração.");
           setPrayerContent(null);
         } else if (templateData) {
-          setPrayerContent(templateData.text_content);
+          setPrayerContent({ text: templateData.text_content, url_audio: templateData.url_audio || null });
         } else {
           setPrayerContent(null);
         }
@@ -96,16 +97,16 @@ const MyPrayerPage = () => {
   }, [session, navigate]);
 
   const handleShare = () => {
-    if (navigator.share && prayerContent) {
+    if (navigator.share && prayerContent?.text) {
       navigator.share({
         title: 'Oração do Dia - Raízes da Fé',
-        text: `Oração do Dia: "${prayerContent}"\n\nConfira o app Raízes da Fé!`,
+        text: `Oração do Dia: "${prayerContent.text}"\n\nConfira o app Raízes da Fé!`,
         url: window.location.href,
       })
       .then(() => showSuccess('Oração compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Oração do Dia: "${prayerContent || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Oração do Dia: "${prayerContent?.text || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Oração copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a oração.'));
@@ -184,7 +185,7 @@ const MyPrayerPage = () => {
       </div>
 
       <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
-        {prayerContent ? (
+        {prayerContent?.text ? (
           <Card className="p-6 space-y-4 w-full">
             <CardHeader className="p-0 pb-2">
               <Heart className="h-16 w-16 text-primary mx-auto mb-4" />
@@ -192,7 +193,7 @@ const MyPrayerPage = () => {
             </CardHeader>
             <CardContent className="p-0">
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{prayerContent}"
+                "{prayerContent.text}"
               </p>
             </CardContent>
           </Card>
@@ -205,19 +206,29 @@ const MyPrayerPage = () => {
       </div>
 
       <div className="flex justify-between items-center py-4 gap-4">
+        {prayerContent?.url_audio && (
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(prayerContent.url_audio!, '_blank')} 
+            size="sm"
+            className="w-fit px-3"
+          >
+            <Headphones className="h-4 w-4 mr-2" /> Ouvir
+          </Button>
+        )}
         <Button 
           variant="outline" 
           onClick={handleShare} 
           size="sm"
-          className="w-fit px-3"
-          disabled={!prayerContent}
+          className={cn("w-fit px-3", !prayerContent?.url_audio && "flex-1")}
+          disabled={!prayerContent?.text}
         >
-          <Share2 className="h-4 w-4 mr-2" />
+          <Share2 className="h-4 w-4" />
         </Button>
         <Button 
           onClick={handleCompleteTask} 
-          className="flex-1"
-          disabled={isCompleting || !prayerContent}
+          className={cn("flex-1", prayerContent?.url_audio && "ml-auto")}
+          disabled={isCompleting || !prayerContent?.text}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
             <>

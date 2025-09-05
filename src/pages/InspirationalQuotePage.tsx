@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, Headphones } from 'lucide-react'; // Adicionado Headphones
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,12 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
+import { cn } from '@/lib/utils'; // Importar cn
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
   const queryClient = useQueryClient();
-  const [quoteContent, setQuoteContent] = useState<string | null>(null);
+  const [quoteContent, setQuoteContent] = useState<{ text: string | null; url_audio: string | null } | null>(null); // Adicionado url_audio
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -74,7 +75,7 @@ const InspirationalQuotePage = () => {
       if (quoteTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content')
+          .select('text_content, url_audio') // Adicionado url_audio
           .eq('id', quoteTemplateId)
           .single();
 
@@ -83,7 +84,7 @@ const InspirationalQuotePage = () => {
           showError("Erro ao carregar o conteúdo da citação.");
           setQuoteContent(null);
         } else if (templateData) {
-          setQuoteContent(templateData.text_content);
+          setQuoteContent({ text: templateData.text_content, url_audio: templateData.url_audio || null });
         } else {
           setQuoteContent(null);
         }
@@ -96,16 +97,16 @@ const InspirationalQuotePage = () => {
   }, [session, navigate]);
 
   const handleShare = () => {
-    if (navigator.share && quoteContent) {
+    if (navigator.share && quoteContent?.text) {
       navigator.share({
         title: 'Citação Inspiradora - Raízes da Fé',
-        text: `Citação Inspiradora: "${quoteContent}"\n\nConfira o app Raízes da Fé!`,
+        text: `Citação Inspiradora: "${quoteContent.text}"\n\nConfira o app Raízes da Fé!`,
         url: window.location.href,
       })
       .then(() => showSuccess('Citação compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Citação Inspiradora: "${quoteContent || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Citação Inspiradora: "${quoteContent?.text || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Citação copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a citação.'));
@@ -184,7 +185,7 @@ const InspirationalQuotePage = () => {
       </div>
 
       <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
-        {quoteContent ? (
+        {quoteContent?.text ? (
           <Card className="p-6 space-y-4 w-full">
             <CardHeader className="p-0 pb-2">
               <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
@@ -192,7 +193,7 @@ const InspirationalQuotePage = () => {
             </CardHeader>
             <CardContent className="p-0">
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                "{quoteContent}"
+                "{quoteContent.text}"
               </p>
             </CardContent>
           </Card>
@@ -205,19 +206,29 @@ const InspirationalQuotePage = () => {
       </div>
 
       <div className="flex justify-between items-center py-4 gap-4">
+        {quoteContent?.url_audio && (
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(quoteContent.url_audio!, '_blank')} 
+            size="sm"
+            className="w-fit px-3"
+          >
+            <Headphones className="h-4 w-4 mr-2" /> Ouvir
+          </Button>
+        )}
         <Button 
           variant="outline" 
           onClick={handleShare} 
           size="sm"
-          className="w-fit px-3"
-          disabled={!quoteContent}
+          className={cn("w-fit px-3", !quoteContent?.url_audio && "flex-1")}
+          disabled={!quoteContent?.text}
         >
           <Share2 className="h-4 w-4" />
         </Button>
         <Button 
           onClick={handleCompleteTask} 
-          className="flex-1"
-          disabled={isCompleting || !quoteContent}
+          className={cn("flex-1", quoteContent?.url_audio && "ml-auto")}
+          disabled={isCompleting || !quoteContent?.text}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
             <>
