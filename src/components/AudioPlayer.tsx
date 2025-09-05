@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, VolumeX, Loader2, Headphones } from 'lucide-react'; // Added Headphones icon
+import { Play, Pause, Volume2, VolumeX, Loader2, Headphones } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { showError } from '@/utils/toast'; // Importar showError para feedback ao usuário
 
 interface AudioPlayerProps {
   src: string;
   className?: string;
 }
+
+const LOADING_TIMEOUT_MS = 10000; // 10 segundos para carregar o áudio
 
 export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -18,57 +21,119 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Indica se está carregando metadados ou dados
+  const [canPlay, setCanPlay] = useState(false); // Indica se o áudio pode ser reproduzido sem interrupções
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false); // New state for expansion
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const resetPlayerState = useCallback(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsLoading(true);
+    setCanPlay(false);
+    setError(null);
+    // Não resetar isExpanded aqui, pois é controlado pela interação do usuário
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const setAudioData = () => {
+    resetPlayerState(); // Resetar estado ao mudar a fonte do áudio
+
+    const handleLoadedMetadata = () => {
+      console.log('Audio: loadedmetadata');
       setDuration(audio.duration);
-      setIsLoading(false);
+      // setIsLoading(false); // Não desativar isLoading aqui, esperar por canplaythrough
     };
 
-    const setAudioTime = () => setCurrentTime(audio.currentTime);
-    const togglePlay = () => setIsPlaying(!audio.paused);
+    const handleCanPlay = () => {
+      console.log('Audio: canplay');
+      // O áudio pode começar a tocar, mas pode precisar de mais buffer
+    };
+
+    const handleCanPlayThrough = () => {
+      console.log('Audio: canplaythrough - Audio is ready!');
+      setIsLoading(false);
+      setCanPlay(true);
+    };
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
     const handleEnded = () => setIsPlaying(false);
-    const handleError = () => {
-      setError("Não foi possível carregar o áudio.");
+    const handleError = (e: Event) => {
+      console.error('Audio: error', audio.error, e);
+      let errorMessage = "Não foi possível carregar o áudio.";
+      if (audio.error) {
+        switch (audio.error.code) {
+          case audio.error.MEDIA_ERR_NETWORK:
+            errorMessage = "Erro de rede ao carregar o áudio.";
+            break;
+          case audio.error.MEDIA_ERR_DECODE:
+            errorMessage = "Erro de decodificação do áudio.";
+            break;
+          case audio.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = "Formato de áudio não suportado.";
+            break;
+          case audio.error.MEDIA_ERR_ABORTED:
+            errorMessage = "Carregamento de áudio abortado.";
+            break;
+          default:
+            errorMessage = "Erro desconhecido ao carregar o áudio.";
+        }
+      }
+      setError(errorMessage);
+      setIsLoading(false);
+      setCanPlay(false);
+      showError(errorMessage);
+    };
+    const handleWaiting = () => {
+      console.log('Audio: waiting');
+      setIsLoading(true);
+    };
+    const handlePlaying = () => {
+      console.log('Audio: playing');
       setIsLoading(false);
     };
-    const handleWaiting = () => setIsLoading(true);
-    const handlePlaying = () => setIsLoading(false);
 
-    audio.addEventListener('loadeddata', setAudioData);
-    audio.addEventListener('timeupdate', setAudioTime);
-    audio.addEventListener('play', togglePlay);
-    audio.addEventListener('pause', togglePlay);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
 
-    // Reset state when src changes
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsLoading(true);
-    setError(null);
-    // Do not reset isExpanded here, it should be controlled by user interaction.
+    // Timeout para o carregamento inicial
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading && !canPlay) {
+        console.warn('Audio: Loading timed out.');
+        setError("O áudio demorou muito para carregar. Verifique sua conexão.");
+        setIsLoading(false);
+        setCanPlay(false);
+        showError("O áudio demorou muito para carregar.");
+      }
+    }, LOADING_TIMEOUT_MS);
 
     return () => {
-      audio.removeEventListener('loadeddata', setAudioData);
-      audio.removeEventListener('timeupdate', setAudioTime);
-      audio.removeEventListener('play', togglePlay);
-      audio.removeEventListener('pause', togglePlay);
+      clearTimeout(loadingTimeout);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
     };
-  }, [src]);
+  }, [src, resetPlayerState, isLoading, canPlay]); // Adicionado isLoading e canPlay para o cleanup do timeout
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -85,16 +150,19 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
     }
   }, [isExpanded, isPlaying]);
 
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     const audio = audioRef.current;
     if (audio) {
       if (isPlaying) {
         audio.pause();
       } else {
-        audio.play().catch(e => {
+        try {
+          await audio.play();
+        } catch (e: any) {
           console.error("Erro ao tentar reproduzir áudio:", e);
-          setError("Erro ao reproduzir áudio. Tente novamente.");
-        });
+          setError("Erro ao reproduzir áudio. Pode ser necessário interagir com a página primeiro.");
+          showError("Erro ao reproduzir áudio: " + e.message);
+        }
       }
     }
   };
@@ -132,7 +200,6 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
     );
   }
 
-  // If no src, don't render anything
   if (!src) {
     return null;
   }
@@ -146,7 +213,7 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
           variant="outline" 
           onClick={() => setIsExpanded(true)} 
           className="w-full"
-          disabled={isLoading || duration === 0}
+          disabled={isLoading || !canPlay} // Desabilitar se ainda estiver carregando ou não puder reproduzir
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Headphones className="h-4 w-4 mr-2" />}
           Ouvir Áudio
@@ -158,7 +225,7 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
               variant="ghost" 
               size="icon" 
               onClick={togglePlayPause} 
-              disabled={isLoading || duration === 0}
+              disabled={isLoading || !canPlay} // Desabilitar se ainda estiver carregando ou não puder reproduzir
               className="text-primary hover:bg-primary/10"
             >
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />)}
@@ -172,7 +239,7 @@ export const AudioPlayer = ({ src, className }: AudioPlayerProps) => {
                 step={1}
                 onValueChange={handleSeek}
                 className="w-full"
-                disabled={isLoading || duration === 0}
+                disabled={isLoading || !canPlay} // Desabilitar se ainda estiver carregando ou não puder reproduzir
               />
               <span className="text-xs text-muted-foreground">{formatTime(duration)}</span>
             </div>
