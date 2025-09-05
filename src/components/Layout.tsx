@@ -11,7 +11,10 @@ const Layout = () => {
   const hideFooterPaths = [
     "/today/spiritual-journal",
     "/today/verse-of-the-day",
-    "/today/daily-study", // Novo caminho adicionado
+    "/today/daily-study",
+    "/today/quick-reflection", // Novo caminho adicionado
+    "/today/inspirational-quote", // Novo caminho adicionado
+    "/today/my-prayer", // Novo caminho adicionado
   ];
 
   const shouldHideFooter = hideFooterPaths.includes(location.pathname);

@@ -24,8 +24,12 @@ import { ThemeProvider } from "./components/theme-provider";
 import ManageSubscriptionPage from "./pages/ManageSubscriptionPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import SettingsPage from "./pages/SettingsPage";
+import DailyStudyPage from "./pages/DailyStudyPage";
+import QuickReflectionPage from "./pages/QuickReflectionPage"; // Novo import
+import InspirationalQuotePage from "./pages/InspirationalQuotePage"; // Novo import
+import MyPrayerPage from "./pages/MyPrayerPage"; // Novo import
 import AboutAppPage from "./pages/AboutAppPage";
-import DailyStudyPage from "./pages/DailyStudyPage"; // Novo import
+
 
 const queryClient = new QueryClient();
 
@@ -63,7 +67,10 @@ const App = () => (
                 <Route path="/today" element={<Today />} />
                 <Route path="/today/spiritual-journal" element={<SpiritualJournalPage />} />
                 <Route path="/today/verse-of-the-day" element={<VerseOfTheDayPage />} />
-                <Route path="/today/daily-study" element={<DailyStudyPage />} /> {/* Nova rota */}
+                <Route path="/today/daily-study" element={<DailyStudyPage />} />
+                <Route path="/today/quick-reflection" element={<QuickReflectionPage />} /> {/* Nova rota */}
+                <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} /> {/* Nova rota */}
+                <Route path="/today/my-prayer" element={<MyPrayerPage />} /> {/* Nova rota */}
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

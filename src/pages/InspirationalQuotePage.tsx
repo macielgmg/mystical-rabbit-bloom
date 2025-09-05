@@ -1,0 +1,186 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/contexts/SessionContext';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
+import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const InspirationalQuotePage = () => {
+  const navigate = useNavigate();
+  const { session } = useSession();
+  const queryClient = useQueryClient();
+  const [quoteContent, setQuoteContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const userId = session.user.id;
+
+      const { data: dailyContentData, error: dailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('inspirational_quotes')
+        .eq('user_id', userId)
+        .eq('content_date', todayStr)
+        .single();
+
+      if (dailyContentError && dailyContentError.code !== 'PGRST116') {
+        console.error("Erro ao buscar ID da citação inspiradora para o usuário:", dailyContentError);
+        showError("Erro ao carregar a citação inspiradora.");
+        setQuoteContent(null);
+        setLoading(false);
+        return;
+      }
+
+      const quoteTemplateId = dailyContentData?.inspirational_quotes;
+
+      if (quoteTemplateId) {
+        const { data: templateData, error: templateError } = await supabase
+          .from('daily_content_templates')
+          .select('text_content')
+          .eq('id', quoteTemplateId)
+          .single();
+
+        if (templateError) {
+          console.error("Erro ao buscar conteúdo do template da citação:", templateError);
+          showError("Erro ao carregar o conteúdo da citação.");
+          setQuoteContent(null);
+        } else if (templateData) {
+          setQuoteContent(templateData.text_content);
+        } else {
+          setQuoteContent(null);
+        }
+      } else {
+        setQuoteContent(null);
+      }
+      setLoading(false);
+    };
+    fetchQuote();
+  }, [session, navigate]);
+
+  const handleShare = () => {
+    if (navigator.share && quoteContent) {
+      navigator.share({
+        title: 'Citação Inspiradora - Raízes da Fé',
+        text: `Citação Inspiradora: "${quoteContent}"\n\nConfira o app Raízes da Fé!`,
+        url: window.location.href,
+      })
+      .then(() => showSuccess('Citação compartilhada com sucesso!'))
+      .catch((error) => console.error('Erro ao compartilhar:', error));
+    } else {
+      const shareText = `Citação Inspiradora: "${quoteContent || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      navigator.clipboard.writeText(shareText)
+        .then(() => showSuccess('Citação copiada para a área de transferência!'))
+        .catch(() => showError('Não foi possível copiar a citação.'));
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!session) {
+      showError("Você precisa estar logado para finalizar.");
+      return;
+    }
+    setIsCompleting(true);
+    const today = new Date().toISOString().split('T')[0];
+    const userId = session.user.id;
+
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: userId,
+          task_name: 'inspirational_quotes',
+          task_date: today,
+          value: 1,
+        }, { onConflict: 'user_id,task_name,task_date' });
+
+      if (error) {
+        throw error;
+      }
+      showSuccess("Citação inspiradora finalizada!");
+      queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      navigate('/today');
+    } catch (error: any) {
+      showError("Erro ao finalizar a citação: " + error.message);
+      console.error("Erro ao finalizar citação:", error);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4">
+      <header className="relative flex items-center justify-center py-4 mb-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute left-0"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold text-primary">Citação Inspiradora</h1>
+      </header>
+
+      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
+        {quoteContent ? (
+          <Card className="p-6 space-y-4 w-full">
+            <CardHeader className="p-0 pb-2">
+              <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl font-bold text-primary">Sua Citação de Hoje</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                "{quoteContent}"
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            <p className="text-lg">Nenhuma citação disponível para hoje.</p>
+            <p className="text-sm">Tente novamente mais tarde ou verifique sua conexão.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center py-4 gap-4">
+        <Button 
+          variant="outline" 
+          onClick={handleShare} 
+          className="flex-1 max-w-[150px]"
+          disabled={!quoteContent}
+        >
+          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+        </Button>
+        <Button 
+          onClick={handleCompleteTask} 
+          className="flex-1"
+          disabled={isCompleting || !quoteContent}
+        >
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+          Finalizar Citação
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default InspirationalQuotePage;

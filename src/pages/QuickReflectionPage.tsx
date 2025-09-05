@@ -1,0 +1,186 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from '@/contexts/SessionContext';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
+import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+const QuickReflectionPage = () => {
+  const navigate = useNavigate();
+  const { session } = useSession();
+  const queryClient = useQueryClient();
+  const [reflectionContent, setReflectionContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  useEffect(() => {
+    const fetchReflection = async () => {
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const userId = session.user.id;
+
+      const { data: dailyContentData, error: dailyContentError } = await supabase
+        .from('daily_content_for_users')
+        .select('quick_reflection')
+        .eq('user_id', userId)
+        .eq('content_date', todayStr)
+        .single();
+
+      if (dailyContentError && dailyContentError.code !== 'PGRST116') {
+        console.error("Erro ao buscar ID da reflexão rápida para o usuário:", dailyContentError);
+        showError("Erro ao carregar a reflexão rápida.");
+        setReflectionContent(null);
+        setLoading(false);
+        return;
+      }
+
+      const reflectionTemplateId = dailyContentData?.quick_reflection;
+
+      if (reflectionTemplateId) {
+        const { data: templateData, error: templateError } = await supabase
+          .from('daily_content_templates')
+          .select('text_content')
+          .eq('id', reflectionTemplateId)
+          .single();
+
+        if (templateError) {
+          console.error("Erro ao buscar conteúdo do template da reflexão:", templateError);
+          showError("Erro ao carregar o conteúdo da reflexão.");
+          setReflectionContent(null);
+        } else if (templateData) {
+          setReflectionContent(templateData.text_content);
+        } else {
+          setReflectionContent(null);
+        }
+      } else {
+        setReflectionContent(null);
+      }
+      setLoading(false);
+    };
+    fetchReflection();
+  }, [session, navigate]);
+
+  const handleShare = () => {
+    if (navigator.share && reflectionContent) {
+      navigator.share({
+        title: 'Reflexão Rápida - Raízes da Fé',
+        text: `Reflexão Rápida: "${reflectionContent}"\n\nConfira o app Raízes da Fé!`,
+        url: window.location.href,
+      })
+      .then(() => showSuccess('Reflexão compartilhada com sucesso!'))
+      .catch((error) => console.error('Erro ao compartilhar:', error));
+    } else {
+      const shareText = `Reflexão Rápida: "${reflectionContent || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      navigator.clipboard.writeText(shareText)
+        .then(() => showSuccess('Reflexão copiada para a área de transferência!'))
+        .catch(() => showError('Não foi possível copiar a reflexão.'));
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!session) {
+      showError("Você precisa estar logado para finalizar.");
+      return;
+    }
+    setIsCompleting(true);
+    const today = new Date().toISOString().split('T')[0];
+    const userId = session.user.id;
+
+    try {
+      const { error } = await supabase
+        .from('daily_tasks_progress')
+        .upsert({
+          user_id: userId,
+          task_name: 'quick_reflection',
+          task_date: today,
+          value: 1,
+        }, { onConflict: 'user_id,task_name,task_date' });
+
+      if (error) {
+        throw error;
+      }
+      showSuccess("Reflexão rápida finalizada!");
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
+      navigate('/today');
+    } catch (error: any) {
+      showError("Erro ao finalizar a reflexão: " + error.message);
+      console.error("Erro ao finalizar reflexão:", error);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto max-w-2xl flex flex-col h-screen p-4">
+      <header className="relative flex items-center justify-center py-4 mb-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute left-0"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold text-primary">Reflexão Rápida</h1>
+      </header>
+
+      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
+        {reflectionContent ? (
+          <Card className="p-6 space-y-4 w-full">
+            <CardHeader className="p-0 pb-2">
+              <Lightbulb className="h-16 w-16 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl font-bold text-primary">Sua Reflexão de Hoje</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
+                "{reflectionContent}"
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            <p className="text-lg">Nenhuma reflexão disponível para hoje.</p>
+            <p className="text-sm">Tente novamente mais tarde ou verifique sua conexão.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center py-4 gap-4">
+        <Button 
+          variant="outline" 
+          onClick={handleShare} 
+          className="flex-1 max-w-[150px]"
+          disabled={!reflectionContent}
+        >
+          <Share2 className="h-4 w-4 mr-2" /> Compartilhar
+        </Button>
+        <Button 
+          onClick={handleCompleteTask} 
+          className="flex-1"
+          disabled={isCompleting || !reflectionContent}
+        >
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+          Finalizar Reflexão
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default QuickReflectionPage;

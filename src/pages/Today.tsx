@@ -9,10 +9,9 @@ import WeekCalendar from '@/components/WeekCalendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { VerseOfTheDay } from '@/components/VerseOfTheDay';
-import { DailyStudyCard } from '@/components/DailyStudyCard';
-import { QuickReflectionCard } from '@/components/QuickReflectionCard';
-import { InspirationalQuoteCard } from '@/components/InspirationalQuoteCard';
-import { MyPrayerCard } from '@/components/MyPrayerCard';
+import { QuickReflectionTask } from '@/components/QuickReflectionTask'; // Novo import
+import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask'; // Novo import
+import { MyPrayerTask } from '@/components/MyPrayerTask'; // Novo import
 import { format, isSameDay, parseISO } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses"; // Fallback local
 
@@ -29,11 +28,11 @@ interface DailyContentTemplateIds {
 
 // Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
-  verse_of_the_day: { text: string; reference: string; explanation: string | null } | null; // Adicionado explanation
+  verse_of_the_day: { text: string; reference: string; explanation: string | null } | null;
   daily_study: { text: string; title: string | null; reflection: string | null; tags: string[] | null } | null;
-  quick_reflection: string | null;
-  inspirational_quotes: string | null;
-  my_prayer: string | null;
+  quick_reflection: string | null; // Agora é apenas a string do conteúdo
+  inspirational_quotes: string | null; // Agora é apenas a string do conteúdo
+  my_prayer: string | null; // Agora é apenas a string do conteúdo
 }
 
 interface DailyContentTemplate {
@@ -44,7 +43,7 @@ interface DailyContentTemplate {
   reference: string | null;
   reflection: string | null;
   tags: string[] | null;
-  explanation: string | null; // Adicionado explanation
+  explanation: string | null;
 }
 
 const fetchJournalStatus = async (userId: string) => {
@@ -88,6 +87,50 @@ const fetchDailyStudyTaskStatus = async (userId: string) => {
   if (error && error.code !== 'PGRST116') throw error;
   return !!data;
 };
+
+// Novas funções para buscar o status das novas tarefas
+const fetchQuickReflectionTaskStatus = async (userId: string) => {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data, error } = await supabase
+    .from('daily_tasks_progress')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('task_name', 'quick_reflection')
+    .eq('task_date', todayStr)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error;
+  return !!data;
+};
+
+const fetchInspirationalQuoteTaskStatus = async (userId: string) => {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data, error } = await supabase
+    .from('daily_tasks_progress')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('task_name', 'inspirational_quotes')
+    .eq('task_date', todayStr)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error;
+  return !!data;
+};
+
+const fetchMyPrayerTaskStatus = async (userId: string) => {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data, error } = await supabase
+    .from('daily_tasks_progress')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('task_name', 'my_prayer')
+    .eq('task_date', todayStr)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error;
+  return !!data;
+};
+
 
 const fetchStreakData = async (userId: string) => {
   const { data, error } = await supabase
@@ -139,6 +182,25 @@ const Today = () => {
   const { data: isDailyStudyTaskCompleted, isLoading: loadingDailyStudyTask } = useQuery({
     queryKey: ['dailyStudyTaskStatus', session?.user?.id],
     queryFn: () => fetchDailyStudyTaskStatus(session!.user!.id),
+    enabled: !!session?.user,
+  });
+
+  // Novos hooks para o status das novas tarefas
+  const { data: isQuickReflectionTaskCompleted, isLoading: loadingQuickReflectionTask } = useQuery({
+    queryKey: ['quickReflectionTaskStatus', session?.user?.id],
+    queryFn: () => fetchQuickReflectionTaskStatus(session!.user!.id),
+    enabled: !!session?.user,
+  });
+
+  const { data: isInspirationalQuoteTaskCompleted, isLoading: loadingInspirationalQuoteTask } = useQuery({
+    queryKey: ['inspirationalQuoteTaskStatus', session?.user?.id],
+    queryFn: () => fetchInspirationalQuoteTaskStatus(session!.user!.id),
+    enabled: !!session?.user,
+  });
+
+  const { data: isMyPrayerTaskCompleted, isLoading: loadingMyPrayerTask } = useQuery({
+    queryKey: ['myPrayerTaskStatus', session?.user?.id],
+    queryFn: () => fetchMyPrayerTaskStatus(session!.user!.id),
     enabled: !!session?.user,
   });
 
@@ -376,7 +438,7 @@ const Today = () => {
     return 'U';
   };
 
-  const isLoadingAny = loadingJournal || loadingVerseOfTheDayTask || loadingDailyStudyTask || loadingStreak || loadingDailyContent;
+  const isLoadingAny = loadingJournal || loadingVerseOfTheDayTask || loadingDailyStudyTask || loadingStreak || loadingDailyContent || loadingQuickReflectionTask || loadingInspirationalQuoteTask || loadingMyPrayerTask;
 
   return (
     <div className="container mx-auto max-w-2xl h-full flex flex-col space-y-4">
@@ -415,9 +477,6 @@ const Today = () => {
         ) : (
           <>
             <VerseOfTheDay verseContent={actualDailyContent?.verse_of_the_day} loading={loadingDailyContent} className="flex-shrink-0" />
-            <QuickReflectionCard content={actualDailyContent?.quick_reflection || null} />
-            <InspirationalQuoteCard content={actualDailyContent?.inspirational_quotes || null} />
-            <MyPrayerCard content={actualDailyContent?.my_prayer || null} />
             
             <div>
               <h2 className="text-xl font-bold text-primary pb-2">Sua Jornada Diária</h2>
@@ -428,7 +487,22 @@ const Today = () => {
               />
               <DailyStudyTask
                 initialIsCompleted={isDailyStudyTaskCompleted || false}
-                tags={actualDailyContent?.daily_study?.tags || null} // Passando as tags para DailyStudyTask
+                tags={actualDailyContent?.daily_study?.tags || null}
+                className="mb-4"
+              />
+              <QuickReflectionTask
+                initialIsCompleted={isQuickReflectionTaskCompleted || false}
+                contentSnippet={actualDailyContent?.quick_reflection || null}
+                className="mb-4"
+              />
+              <InspirationalQuoteTask
+                initialIsCompleted={isInspirationalQuoteTaskCompleted || false}
+                contentSnippet={actualDailyContent?.inspirational_quotes || null}
+                className="mb-4"
+              />
+              <MyPrayerTask
+                initialIsCompleted={isMyPrayerTaskCompleted || false}
+                contentSnippet={actualDailyContent?.my_prayer || null}
                 className="mb-4"
               />
             </div>
