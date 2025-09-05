@@ -15,16 +15,20 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"; // Importar componentes do Accordion
+} from "@/components/ui/accordion";
+import { Progress } from '@/components/ui/progress'; // Importar Progress
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
-  const { session, preferences } = useSession(); // Obter preferências do usuário
+  const { session, preferences } = useSession();
   const queryClient = useQueryClient();
   const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; reflection: string | null; tags: string[] | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [showAllTags, setShowAllTags] = useState(false); // Novo estado para controlar a exibição de todas as tags
+  const [showAllTags, setShowAllTags] = useState(false);
+
+  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
 
   useEffect(() => {
     const fetchStudy = async () => {
@@ -58,7 +62,7 @@ const DailyStudyPage = () => {
         // 2. Usar o ID do template para buscar o conteúdo real do template
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, title, reflection, tags') // Adicionado 'tags' aqui
+          .select('text_content, title, reflection, tags')
           .eq('id', studyTemplateId)
           .single();
 
@@ -71,13 +75,13 @@ const DailyStudyPage = () => {
             text: templateData.text_content,
             title: templateData.title || 'Estudo Diário',
             reflection: templateData.reflection || null,
-            tags: templateData.tags || null, // Atribuir as tags
+            tags: templateData.tags || null,
           });
         } else {
-          setStudyContent(null); // Template não encontrado
+          setStudyContent(null);
         }
       } else {
-        setStudyContent(null); // Nenhum ID de estudo encontrado para o dia
+        setStudyContent(null);
       }
       setLoading(false);
     };
@@ -181,7 +185,7 @@ const DailyStudyPage = () => {
     return tag;
   };
 
-  if (loading) {
+  if (loading || isLoadingAnyDailyTask) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -203,6 +207,15 @@ const DailyStudyPage = () => {
         <h1 className="text-xl font-bold text-primary">Estudo Diário</h1>
       </header>
 
+      {/* Indicador de Progresso Diário */}
+      <div className="w-full space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
+          <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+        </div>
+        <Progress value={dailyProgressPercentage} className="h-2.5" />
+      </div>
+
       <div className="flex-grow flex flex-col space-y-6 overflow-y-auto pb-4">
         {studyContent ? (
           <>
@@ -215,7 +228,7 @@ const DailyStudyPage = () => {
                   <div 
                     className={cn(
                       "relative flex gap-1 mb-4 cursor-pointer items-center",
-                      showAllTags ? "flex-wrap" : "flex-nowrap overflow-hidden max-h-[24px]" // max-h para uma linha
+                      showAllTags ? "flex-wrap" : "flex-nowrap overflow-hidden max-h-[24px]"
                     )}
                     onClick={() => setShowAllTags(!showAllTags)}
                   >
@@ -296,15 +309,15 @@ const DailyStudyPage = () => {
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          size="sm" // Torna o botão menor
-          className="w-fit px-3" // Ajusta a largura para o conteúdo e adiciona padding horizontal
+          size="sm"
+          className="w-fit px-3"
           disabled={!studyContent}
         >
-          <Share2 className="h-4 w-4" /> {/* Remove mr-2 para deixar apenas o ícone */}
+          <Share2 className="h-4 w-4" />
         </Button>
         <Button 
           onClick={handleCompleteStudy} 
-          className="flex-1" // Faz o botão ocupar o espaço restante
+          className="flex-1"
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}

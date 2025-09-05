@@ -7,14 +7,15 @@ import { SpiritualJournalTask } from '@/components/SpiritualJournalTask';
 import { DailyStudyTask } from '@/components/DailyStudyTask';
 import WeekCalendar from '@/components/WeekCalendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { VerseOfTheDay } from '@/components/VerseOfTheDay';
-import { QuickReflectionTask } from '@/components/QuickReflectionTask'; // Novo import
-import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask'; // Novo import
-import { MyPrayerTask } from '@/components/MyPrayerTask'; // Novo import
+import { QuickReflectionTask } from '@/components/QuickReflectionTask';
+import { InspirationalQuoteTask } from '@/components/InspirationalQuoteTask';
+import { MyPrayerTask } from '@/components/MyPrayerTask';
 import { format, isSameDay, parseISO } from 'date-fns';
-import { getVerseOfTheDay } from "@/content/dailyVerses"; // Fallback local
-import { Progress } from '@/components/ui/progress'; // Importar Progress
+import { getVerseOfTheDay } from "@/content/dailyVerses";
+import { Progress } from '@/components/ui/progress';
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -31,9 +32,9 @@ interface DailyContentTemplateIds {
 interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null } | null;
   daily_study: { text: string; title: string | null; reflection: string | null; tags: string[] | null } | null;
-  quick_reflection: string | null; // Agora é apenas a string do conteúdo
-  inspirational_quotes: string | null; // Agora é apenas a string do conteúdo
-  my_prayer: string | null; // Agora é apenas a string do conteúdo
+  quick_reflection: string | null;
+  inspirational_quotes: string | null;
+  my_prayer: string | null;
 }
 
 interface DailyContentTemplate {
@@ -46,92 +47,6 @@ interface DailyContentTemplate {
   tags: string[] | null;
   explanation: string | null;
 }
-
-const fetchJournalStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'spiritual_journal')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
-const fetchVerseOfTheDayTaskStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'verse_of_the_day')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
-const fetchDailyStudyTaskStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'daily_study')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
-// Novas funções para buscar o status das novas tarefas
-const fetchQuickReflectionTaskStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'quick_reflection')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
-const fetchInspirationalQuoteTaskStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'inspirational_quotes')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
-const fetchMyPrayerTaskStatus = async (userId: string) => {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const { data, error } = await supabase
-    .from('daily_tasks_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('task_name', 'my_prayer')
-    .eq('task_date', todayStr)
-    .single();
-  
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
-};
-
 
 const fetchStreakData = async (userId: string) => {
   const { data, error } = await supabase
@@ -168,42 +83,19 @@ const Today = () => {
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
 
-  const { data: isJournalCompleted, isLoading: loadingJournal } = useQuery({
-    queryKey: ['journalStatus', session?.user?.id],
-    queryFn: () => fetchJournalStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
-
-  const { data: isVerseOfTheDayTaskCompleted, isLoading: loadingVerseOfTheDayTask } = useQuery({
-    queryKey: ['verseOfTheDayTaskStatus', session?.user?.id],
-    queryFn: () => fetchVerseOfTheDayTaskStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
-
-  const { data: isDailyStudyTaskCompleted, isLoading: loadingDailyStudyTask } = useQuery({
-    queryKey: ['dailyStudyTaskStatus', session?.user?.id],
-    queryFn: () => fetchDailyStudyTaskStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
-
-  // Novos hooks para o status das novas tarefas
-  const { data: isQuickReflectionTaskCompleted, isLoading: loadingQuickReflectionTask } = useQuery({
-    queryKey: ['quickReflectionTaskStatus', session?.user?.id],
-    queryFn: () => fetchQuickReflectionTaskStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
-
-  const { data: isInspirationalQuoteTaskCompleted, isLoading: loadingInspirationalQuoteTask } = useQuery({
-    queryKey: ['inspirationalQuoteTaskStatus', session?.user?.id],
-    queryFn: () => fetchInspirationalQuoteTaskStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
-
-  const { data: isMyPrayerTaskCompleted, isLoading: loadingMyPrayerTask } = useQuery({
-    queryKey: ['myPrayerTaskStatus', session?.user?.id],
-    queryFn: () => fetchMyPrayerTaskStatus(session!.user!.id),
-    enabled: !!session?.user,
-  });
+  // Usar o novo hook para o progresso das tarefas diárias
+  const { 
+    completedDailyTasksCount, 
+    totalDailyTasks, 
+    dailyProgressPercentage, 
+    isLoadingAnyDailyTask,
+    isJournalCompleted,
+    isVerseOfTheDayTaskCompleted,
+    isDailyStudyTaskCompleted,
+    isQuickReflectionTaskCompleted,
+    isInspirationalQuoteTaskCompleted,
+    isMyPrayerTaskCompleted,
+  } = useDailyTasksProgress();
 
   const { data: streakData, isLoading: loadingStreak } = useQuery({
     queryKey: ['streakData', session?.user?.id],
@@ -439,21 +331,7 @@ const Today = () => {
     return 'U';
   };
 
-  const isLoadingAny = loadingJournal || loadingVerseOfTheDayTask || loadingDailyStudyTask || loadingStreak || loadingDailyContent || loadingQuickReflectionTask || loadingInspirationalQuoteTask || loadingMyPrayerTask;
-
-  // Cálculo do progresso diário geral
-  const totalDailyTasks = 5; // Diário Espiritual, Estudo Diário, Reflexão Rápida, Citação Inspiradora, Oração do Dia
-  const completedDailyTasksCount = [
-    isJournalCompleted,
-    isDailyStudyTaskCompleted,
-    isQuickReflectionTaskCompleted,
-    isInspirationalQuoteTaskCompleted,
-    isMyPrayerTaskCompleted,
-  ].filter(Boolean).length; // Conta quantos são 'true'
-
-  const dailyProgressPercentage = totalDailyTasks > 0 
-    ? (completedDailyTasksCount / totalDailyTasks) * 100 
-    : 0;
+  const isLoadingAny = isLoadingAnyDailyTask || loadingStreak || loadingDailyContent;
 
   return (
     <div className="container mx-auto max-w-2xl h-full flex flex-col space-y-4">
@@ -481,7 +359,7 @@ const Today = () => {
             </div>
           </div>
           <WeekCalendar />
-          {/* Novo Indicador de Progresso Diário */}
+          {/* Indicador de Progresso Diário */}
           <div className="w-full space-y-2 pt-4 border-t border-muted-foreground/20">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-primary/80">Progresso Diário</h3>

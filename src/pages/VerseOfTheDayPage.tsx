@@ -3,18 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle } from 'lucide-react'; // Adicionado Share2 e CheckCircle
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
-import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
+import { useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress'; // Importar Progress
+import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress'; // Importar o novo hook
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
-  const queryClient = useQueryClient(); // Inicializar useQueryClient
+  const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -123,7 +128,7 @@ const VerseOfTheDayPage = () => {
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingAnyDailyTask) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -145,11 +150,20 @@ const VerseOfTheDayPage = () => {
         <h1 className="text-xl font-bold text-primary">Versículo do Dia</h1>
       </header>
 
-      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4"> {/* Ajustado space-y */}
+      {/* Indicador de Progresso Diário */}
+      <div className="w-full space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-primary/80">Progresso Diário</h3>
+          <span className="text-sm text-muted-foreground">{completedDailyTasksCount} de {totalDailyTasks} tarefas</span>
+        </div>
+        <Progress value={dailyProgressPercentage} className="h-2.5" />
+      </div>
+
+      <div className="flex-grow flex flex-col justify-center items-center text-center space-y-4">
         {verseContent ? (
           <div className="space-y-4">
-            <BookOpen className="h-20 w-20 text-primary mx-auto" /> {/* Ícone um pouco menor */}
-            <p className="text-2xl font-serif italic text-primary/90 leading-relaxed"> {/* Texto menor */}
+            <BookOpen className="h-20 w-20 text-primary mx-auto" />
+            <p className="text-2xl font-serif italic text-primary/90 leading-relaxed">
               "{verseContent.text}"
             </p>
             <p className="text-lg font-semibold text-muted-foreground">
@@ -164,19 +178,19 @@ const VerseOfTheDayPage = () => {
         )}
       </div>
 
-      <div className="flex justify-between items-center py-4 gap-4"> {/* Botões na parte inferior */}
+      <div className="flex justify-between items-center py-4 gap-4">
         <Button 
           variant="outline" 
           onClick={handleShare} 
-          size="sm" // Torna o botão menor
-          className="w-fit px-3" // Ajusta a largura para o conteúdo e adiciona padding horizontal
+          size="sm"
+          className="w-fit px-3"
           disabled={!verseContent}
         >
-          <Share2 className="h-4 w-4" /> {/* Remove mr-2 para deixar apenas o ícone */}
+          <Share2 className="h-4 w-4" />
         </Button>
         <Button 
           onClick={handleCompleteVerse} 
-          className="flex-1" // Faz o botão ocupar o espaço restante
+          className="flex-1"
           disabled={isCompleting || !verseContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
