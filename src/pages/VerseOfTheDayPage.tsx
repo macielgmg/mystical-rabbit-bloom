@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen, Share2, X } from 'lucide-react'; // Adicionado X
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
-import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
@@ -19,7 +19,6 @@ const VerseOfTheDayPage = () => {
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
-  // Removido isCompleting, pois esta tarefa não tem botão de finalizar
 
   const { completedDailyTasksCount, totalDailyTasks, dailyProgressPercentage, isLoadingAnyDailyTask } = useDailyTasksProgress();
 
@@ -85,7 +84,7 @@ const VerseOfTheDayPage = () => {
       navigator.share({
         title: 'Versículo do Dia - Raízes da Fé',
         text: `"${verseContent.text}" — ${verseContent.reference}\n\nConfira o app Raízes da Fé!`,
-        url: window.location.href, // Ou um link mais genérico para o app
+        url: window.location.href,
       })
       .then(() => showSuccess('Versículo compartilhado com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
@@ -97,8 +96,6 @@ const VerseOfTheDayPage = () => {
         .catch(() => showError('Não foi possível copiar o versículo.'));
     }
   };
-
-  // Removido handleCompleteVerse, pois esta tarefa não tem botão de finalizar
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -120,6 +117,14 @@ const VerseOfTheDayPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-primary">Versículo do Dia</h1>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute right-0"
+          onClick={() => navigate('/today')}
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </header>
 
       {/* Indicador de Progresso Diário */}

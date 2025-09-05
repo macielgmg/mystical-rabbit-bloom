@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info } from 'lucide-react';
-import { showError } from '@/utils/toast'; // showSuccess removido
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, X } from 'lucide-react'; // Adicionado X
+import { showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
-import { AudioPlayer } from '@/components/AudioPlayer'; // Importar AudioPlayer
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 const DailyStudyPage = () => {
   const navigate = useNavigate();
@@ -151,8 +151,6 @@ const DailyStudyPage = () => {
       if (error) {
         throw error;
       }
-      // showSuccess("Estudo diário finalizado!"); // Removido
-      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
@@ -231,6 +229,14 @@ const DailyStudyPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-primary">Estudo Diário</h1>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute right-0"
+          onClick={() => navigate('/today')}
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </header>
 
       {/* Indicador de Progresso Diário */}

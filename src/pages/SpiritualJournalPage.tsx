@@ -4,12 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
-import { showError } from '@/utils/toast'; // showSuccess removido
+import { ArrowLeft, Loader2, CheckCircle, X } from 'lucide-react'; // Adicionado X
+import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence'; // Importar utilitários
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted } from '@/utils/dailyTasksSequence';
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -44,8 +44,8 @@ const SpiritualJournalPage = () => {
     isMyPrayerTaskCompleted,
   };
 
-  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true }); // Simula que a tarefa atual está completa para a verificação
-  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true }); // Simula que a tarefa atual está completa para encontrar a próxima
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true });
 
   useEffect(() => {
     const fetchInitialState = async () => {
@@ -92,10 +92,7 @@ const SpiritualJournalPage = () => {
       if (error) {
         throw error;
       }
-      // showSuccess("Progresso salvo!"); // Removido
       
-      // Invalida a query para atualizar o status na página Today
-      // e navega para a próxima tarefa ou para a página Today se for a última
       if (nextTaskPath) {
         navigate(nextTaskPath);
       } else {
@@ -129,6 +126,14 @@ const SpiritualJournalPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-xl font-bold text-primary">Diário Espiritual</h1>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute right-0"
+          onClick={() => navigate('/today')}
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </header>
 
       {/* Indicador de Progresso Diário */}
