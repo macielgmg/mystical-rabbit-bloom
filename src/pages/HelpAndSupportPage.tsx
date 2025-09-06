@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } => 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Whatsapp, HelpCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, HelpCircle } from 'lucide-react'; // Alterado Whatsapp para MessageSquare
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const WHATSAPP_NUMBER = "5511999999999"; // Substitua pelo número de WhatsApp real
@@ -44,7 +44,7 @@ const HelpAndSupportPage = () => {
             onClick={handleWhatsappClick} 
             className="w-full py-6 text-lg bg-green-600 hover:bg-green-700 text-white"
           >
-            <Whatsapp className="h-6 w-6 mr-3" />
+            <MessageSquare className="h-6 w-6 mr-3" /> {/* Alterado Whatsapp para MessageSquare */}
             Falar com Suporte via WhatsApp
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
