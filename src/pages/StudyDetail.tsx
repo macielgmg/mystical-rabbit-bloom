@@ -24,6 +24,13 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 
 interface ChapterFromDB {
@@ -45,17 +52,18 @@ interface StudyFromDB {
   cover_image_url: string;
 }
 
-const CHAPTERS_PER_PAGE = 10; // Definindo 10 capítulos por página
+const CHAPTERS_PER_PAGE = 10;
 
 const StudyDetail = () => {
   const { studyId } = useParams<{ studyId: string }>();
   const { session, isPro: isUserPro } = useSession();
   const navigate = useNavigate();
   const [study, setStudy] = useState<StudyFromDB | null>(null);
-  const [allChapters, setAllChapters] = useState<Chapter[]>([]); // Todos os capítulos
+  const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProAccessModal, setShowProAccessModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1); // Estado para a página atual
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modalStudyTitle, setModalStudyTitle] = useState('');
 
   useEffect(() => {
     const fetchStudyData = async () => {
@@ -67,7 +75,6 @@ const StudyDetail = () => {
       setLoading(true);
 
       try {
-        // 1. Fetch study details from the database
         const { data: studyData, error: studyError } = await supabase
           .from('studies')
           .select('*')
@@ -82,14 +89,13 @@ const StudyDetail = () => {
         }
         setStudy(studyData);
 
-        // Check for Pro access
         if (!studyData.is_free && !isUserPro) {
+          setModalStudyTitle(studyData.title);
           setShowProAccessModal(true);
           setLoading(false);
           return;
         }
 
-        // 2. Fetch all chapters for this study from the database
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
@@ -106,7 +112,6 @@ const StudyDetail = () => {
 
         const chapterIds = chaptersData.map(c => c.id);
 
-        // 3. Fetch user progress for these chapters
         const { data: progressData, error: progressError } = await supabase
           .from('user_progress')
           .select('chapter_id, completed_at')
@@ -115,7 +120,6 @@ const StudyDetail = () => {
 
         if (progressError) {
           console.error('Erro ao buscar progresso dos capítulos:', progressError);
-          // Proceed with chapters marked as not completed if progress fetch fails
           setAllChapters(chaptersData.map(c => ({ ...c, completed: false })));
           setLoading(false);
           return;
@@ -138,7 +142,6 @@ const StudyDetail = () => {
         console.error('Error fetching study data:', error);
         setStudy(null);
         setAllChapters([]);
-        // Only show error toast if it's not the 'no rows found' error for studyData
         if (error.code !== 'PGRST116') {
           showError('Erro ao carregar detalhes do estudo: ' + error.message);
         }
@@ -165,7 +168,6 @@ const StudyDetail = () => {
     }
   };
 
-  // Lógica de paginação
   const totalPages = Math.ceil(allChapters.length / CHAPTERS_PER_PAGE);
   const startIndex = (currentPage - 1) * CHAPTERS_PER_PAGE;
   const endIndex = startIndex + CHAPTERS_PER_PAGE;
@@ -174,47 +176,71 @@ const StudyDetail = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo ao mudar de página
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const renderPaginationItems = () => {
     const items = [];
-    const maxVisiblePages = 5; // Número máximo de páginas visíveis diretamente
-    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const pagesToShowAfterCurrent = 3; // Exibir 3 páginas após a atual
 
-    if (startPage > 1) {
+    // Adiciona a página atual
+    if (totalPages > 0) {
       items.push(
-        <PaginationItem key="1">
-          <PaginationLink onClick={() => handlePageChange(1)}>1</PaginationLink>
-        </PaginationItem>
-      );
-      if (startPage > 2) {
-        items.push(<PaginationItem key="ellipsis-start"><PaginationEllipsis /></PaginationItem>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink isActive={i === currentPage} onClick={() => handlePageChange(i)}>
-            {i}
+        <PaginationItem key={currentPage}>
+          <PaginationLink isActive={true} onClick={() => handlePageChange(currentPage)}>
+            {currentPage}
           </PaginationLink>
         </PaginationItem>
       );
     }
 
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        items.push(<PaginationItem key="ellipsis-end"><PaginationEllipsis /></PaginationItem>);
+    // Adiciona até 3 páginas seguintes
+    for (let i = 1; i <= pagesToShowAfterCurrent; i++) {
+      const pageNum = currentPage + i;
+      if (pageNum <= totalPages) {
+        items.push(
+          <PaginationItem key={pageNum}>
+            <PaginationLink isActive={false} onClick={() => handlePageChange(pageNum)}>
+              {pageNum}
+            </PaginationLink>
+          </PaginationItem>
+        );
       }
+    }
+
+    // Adiciona reticências se houver páginas entre a última exibida e a última página
+    const lastVisiblePage = currentPage + pagesToShowAfterCurrent;
+    if (lastVisiblePage < totalPages) {
       items.push(
-        <PaginationItem key={totalPages}>
-          <PaginationLink onClick={() => handlePageChange(totalPages)}>{totalPages}</PaginationLink>
+        <PaginationItem key="ellipsis">
+          <Select onValueChange={(value) => handlePageChange(Number(value))}>
+            <SelectTrigger className="w-[40px] h-9 px-0 text-center">
+              <SelectValue placeholder="..." />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <SelectItem key={page} value={String(page)}>
+                  {page}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </PaginationItem>
       );
     }
+
+    // Adiciona a última página se ela não estiver já exibida e houver mais de 1 página no total
+    if (totalPages > 1 && !items.some(item => item.key === totalPages)) {
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink isActive={currentPage === totalPages} onClick={() => handlePageChange(totalPages)}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
     return items;
   };
 
@@ -238,7 +264,7 @@ const StudyDetail = () => {
             <Crown className="h-16 w-16 text-yellow-500 mb-4" />
             <AlertDialogTitle className="text-2xl font-bold text-primary">Acesso Pro Necessário</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              O estudo "{study.title}" é um conteúdo exclusivo para membros Pro.
+              O estudo "{modalStudyTitle}" é um conteúdo exclusivo para membros Pro.
               Assine o plano Pro para ter acesso ilimitado a este e outros estudos premium!
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -273,7 +299,6 @@ const StudyDetail = () => {
   const totalChapters = allChapters.length;
   const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
 
-  // ID do estudo "150 Salmos Explicados"
   const SALMOS_STUDY_ID = '8a1b2c3d-4e5f-4678-9012-34567890abcd';
 
   return (
@@ -324,11 +349,11 @@ const StudyDetail = () => {
             <Pagination className="mt-8">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>Anterior</PaginationPrevious>
+                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Anterior</PaginationPrevious>
                 </PaginationItem>
                 {renderPaginationItems()}
                 <PaginationItem>
-                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>Próximo</PaginationNext>
+                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Próximo</PaginationNext>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
