@@ -1,13 +1,26 @@
+"use client";
+
 import { Award } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 
 interface AchievementToastProps {
+  id: string; // Adicionado ID para navegação
   name: string;
   description: string;
 }
 
-export const AchievementToast = ({ name, description }: AchievementToastProps) => {
+export const AchievementToast = ({ id, name, description }: AchievementToastProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate('/achievements', { state: { highlightAchievementId: id } });
+  };
+
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-card border border-primary/20 w-full max-w-sm relative overflow-hidden">
+    <div 
+      className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-card border border-primary/20 w-full max-w-sm relative overflow-hidden cursor-pointer"
+      onClick={handleClick} // Adicionado o handler de clique
+    >
       {/* Animação de brilho com CSS */}
       <style>
         {`

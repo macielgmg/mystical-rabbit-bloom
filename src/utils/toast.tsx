@@ -19,13 +19,14 @@ export const dismissToast = (toastId: string | number) => {
 };
 
 interface Achievement {
+  id: string; // Adicionado ID
   name: string;
   description: string;
 }
 
 export const showAchievementToast = (achievement: Achievement) => {
   toast.custom(() => (
-    <AchievementToast name={achievement.name} description={achievement.description} />
+    <AchievementToast id={achievement.id} name={achievement.name} description={achievement.description} />
   ), { duration: 5000 });
 };
 

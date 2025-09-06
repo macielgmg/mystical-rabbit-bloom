@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, forwardRef } from "react"; // Importar useRef e forwardRef
+import { useNavigate, useLocation } from "react-router-dom"; // Importar useLocation
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/contexts/SessionContext";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
 
 // --- Shared components and types ---
 
-const iconComponents: { [key: string]: typeof LucideIcon } = { // Corrigido: usando typeof LucideIcon
+const iconComponents: { [key: string]: typeof LucideIcon } = {
   Sparkles,
   BookOpen,
   GraduationCap,
@@ -38,54 +38,74 @@ interface Achievement {
   icon_name: string;
 }
 
-const AchievementCard = ({ title, description, iconName, isUnlocked }: { title: string, description: string, iconName: string, isUnlocked: boolean }) => {
-  const Icon = iconComponents[iconName] || Target;
-  return (
-    <Drawer>
-      <DrawerTrigger asChild>
-        <Card className={cn(
-          "flex flex-col items-center justify-center p-4 bg-card text-center h-full transition-all cursor-pointer",
-          !isUnlocked && "grayscale opacity-50"
-        )}>
-          <div className="p-3 rounded-full bg-primary/10 mb-2">
-            <Icon className="h-6 w-6 text-primary" />
-          </div>
-          <p className="text-xs font-semibold text-primary/90 leading-tight">{title}</p>
-        </Card>
-      </DrawerTrigger>
-      <DrawerContent>
-        <div className="mx-auto w-full max-w-sm text-center">
-          <DrawerHeader>
-            <div className="flex flex-col items-center justify-center p-4">
-              <div className={cn("p-4 rounded-full bg-primary/10 mb-4", !isUnlocked && "grayscale")}>
-                <Icon className="h-12 w-12 text-primary" />
-              </div>
-              <DrawerTitle className="text-2xl">{title}</DrawerTitle>
-              <DrawerDescription className="mt-2">{description}</DrawerDescription>
-              {!isUnlocked && (
-                 <p className="text-sm text-muted-foreground mt-4 border-t pt-4 w-full">Continue seus estudos para desbloquear esta conquista!</p>
-              )}
+// Modificado para usar forwardRef e aceitar prop isHighlighted
+const AchievementCard = forwardRef<HTMLDivElement, { title: string, description: string, iconName: string, isUnlocked: boolean, isHighlighted?: boolean }>(
+  ({ title, description, iconName, isUnlocked, isHighlighted }, ref) => {
+    const Icon = iconComponents[iconName] || Target;
+    return (
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Card 
+            ref={ref} // Atribuir a ref aqui
+            className={cn(
+              "flex flex-col items-center justify-center p-4 bg-card text-center h-full transition-all cursor-pointer",
+              !isUnlocked && "grayscale opacity-50",
+              isHighlighted && "ring-4 ring-primary/50 animate-pulse-once" // Adicionar classe de destaque
+            )}
+          >
+            <div className="p-3 rounded-full bg-primary/10 mb-2">
+              <Icon className="h-6 w-6 text-primary" />
             </div>
-          </DrawerHeader>
-          <DrawerFooter>
-            <DrawerClose asChild>
-              <Button variant="outline">Fechar</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </div>
-      </DrawerContent>
-    </Drawer>
-  );
-};
+            <p className="text-xs font-semibold text-primary/90 leading-tight">{title}</p>
+          </Card>
+        </DrawerTrigger>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm text-center">
+            <DrawerHeader>
+              <div className="flex flex-col items-center justify-center p-4">
+                <div className={cn("p-4 rounded-full bg-primary/10 mb-4", !isUnlocked && "grayscale")}>
+                  <Icon className="h-12 w-12 text-primary" />
+                </div>
+                <DrawerTitle className="text-2xl">{title}</DrawerTitle>
+                <DrawerDescription className="mt-2">{description}</DrawerDescription>
+                {!isUnlocked && (
+                   <p className="text-sm text-muted-foreground mt-4 border-t pt-4 w-full">Continue seus estudos para desbloquear esta conquista!</p>
+                )}
+              </div>
+            </DrawerHeader>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline">Fechar</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+);
 
 // --- Achievements Page Component ---
 
 const AchievementsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook para obter a localização atual
   const { session } = useSession();
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [unlockedAchievementIds, setUnlockedAchievementIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [highlightedAchievementId, setHighlightedAchievementId] = useState<string | null>(null); // Estado para a conquista a ser destacada
+
+  const achievementRefs = useRef<Map<string, HTMLDivElement | null>>(new Map()); // Mapa para armazenar referências aos cards
+
+  useEffect(() => {
+    // Verifica se há um ID de conquista para destacar no estado da localização
+    if (location.state?.highlightAchievementId) {
+      setHighlightedAchievementId(location.state.highlightAchievementId);
+      // Limpa o estado para que o destaque não persista em visitas subsequentes
+      navigate(location.pathname, { replace: true, state: {} }); 
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -120,6 +140,19 @@ const AchievementsPage = () => {
 
     fetchData();
   }, [session]);
+
+  // Efeito para rolar até a conquista destacada
+  useEffect(() => {
+    if (highlightedAchievementId) {
+      const node = achievementRefs.current.get(highlightedAchievementId);
+      if (node) {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Remove o destaque após um tempo
+        const timer = setTimeout(() => setHighlightedAchievementId(null), 3000); // Destaque por 3 segundos
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [highlightedAchievementId, allAchievements]); // Re-executa se a lista de conquistas mudar
 
   const unlockedAchievements = allAchievements.filter(ach => unlockedAchievementIds.has(ach.id));
 
@@ -157,6 +190,8 @@ const AchievementsPage = () => {
                     description={ach.description}
                     iconName={ach.icon_name}
                     isUnlocked={true} 
+                    isHighlighted={highlightedAchievementId === ach.id}
+                    ref={node => achievementRefs.current.set(ach.id, node)} // Atribuir ref
                   />
                 ))}
               </div>
@@ -176,6 +211,8 @@ const AchievementsPage = () => {
                   description={ach.description}
                   iconName={ach.icon_name}
                   isUnlocked={unlockedAchievementIds.has(ach.id)} 
+                  isHighlighted={highlightedAchievementId === ach.id}
+                  ref={node => achievementRefs.current.set(ach.id, node)} // Atribuir ref
                 />
               ))}
             </div>
