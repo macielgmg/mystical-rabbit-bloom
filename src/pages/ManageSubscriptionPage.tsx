@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Crown, XCircle, Gem, BookOpen, Sparkles, TrendingUp, Frown, Headphones } from "lucide-react"; // Adicionado Headphones
+import { ArrowLeft, CheckCircle, Crown, XCircle, Gem, BookOpen, Sparkles, TrendingUp, Frown, Headphones, RefreshCcw } from "lucide-react"; // Adicionado RefreshCcw
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/contexts/SessionContext";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ const ManageSubscriptionPage = () => {
   const navigate = useNavigate();
   const { isPro, recurrence, currentBillingPeriodStart, proAccessEndAt, paymentStatus } = useSession(); // Obtendo os novos campos da sessão
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isRenewing, setIsRenewing] = useState(false); // Novo estado para renovação
 
   const proBenefits = [
     { icon: BookOpen, text: "Acesso ilimitado a todos os estudos premium." },
@@ -62,6 +63,16 @@ const ManageSubscriptionPage = () => {
     // Poderia redirecionar ou atualizar o estado do usuário
   };
 
+  const handleRenewSubscription = () => {
+    setIsRenewing(true);
+    // Lógica real de renovação da assinatura aqui
+    alert("Funcionalidade de renovação em breve! (Redirecionando para planos)");
+    setIsRenewing(false);
+    navigate('/manage-subscription'); // Redireciona para a mesma página para ver os planos
+  };
+
+  const isSubscriptionCancelled = paymentStatus === 'cancelado';
+
   return (
     <div className="container mx-auto max-w-2xl">
       <header className="relative flex items-center justify-center py-4 mb-4">
@@ -86,7 +97,7 @@ const ManageSubscriptionPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0 space-y-4">
-            {paymentStatus === 'cancelado' && accessEndDate ? (
+            {isSubscriptionCancelled && accessEndDate ? (
               <p className="text-destructive font-semibold">
                 Sua assinatura foi cancelada. Você terá acesso Pro até: <span className="font-bold">{accessEndDate}</span>
               </p>
@@ -100,33 +111,45 @@ const ManageSubscriptionPage = () => {
               </p>
             )}
             
-            <AlertDialog open={isCancelling} onOpenChange={setIsCancelling}>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                >
-                  Cancelar Assinatura
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader className="flex flex-col items-center text-center">
-                  <Frown className="h-16 w-16 text-destructive mb-4" />
-                  <AlertDialogTitle className="text-2xl font-bold text-primary">Poxa, você quer mesmo cancelar?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-muted-foreground">
-                    Sentiremos sua falta! Ao cancelar, você perderá o acesso aos recursos Pro no final do seu ciclo de faturamento atual.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-center gap-3">
-                  <AlertDialogCancel asChild>
-                    <Button variant="outline" className="w-full sm:w-auto">Mudei de Ideia</Button>
-                  </AlertDialogCancel>
-                  <AlertDialogAction asChild>
-                    <Button variant="destructive" className="w-full sm:w-auto" onClick={handleConfirmCancel}>Continuar Cancelamento</Button>
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {isSubscriptionCancelled ? (
+              <Button 
+                variant="default" 
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={handleRenewSubscription}
+                disabled={isRenewing}
+              >
+                {isRenewing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCcw className="h-4 w-4 mr-2" />}
+                Renovar Assinatura
+              </Button>
+            ) : (
+              <AlertDialog open={isCancelling} onOpenChange={setIsCancelling}>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full"
+                  >
+                    Cancelar Assinatura
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader className="flex flex-col items-center text-center">
+                    <Frown className="h-16 w-16 text-destructive mb-4" />
+                    <AlertDialogTitle className="text-2xl font-bold text-primary">Poxa, você quer mesmo cancelar?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-muted-foreground">
+                      Sentiremos sua falta! Ao cancelar, você perderá o acesso aos recursos Pro no final do seu ciclo de faturamento atual.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-center gap-3">
+                    <AlertDialogCancel asChild>
+                      <Button variant="outline" className="w-full sm:w-auto">Mudei de Ideia</Button>
+                    </AlertDialogCancel>
+                    <AlertDialogAction asChild>
+                      <Button variant="destructive" className="w-full sm:w-auto" onClick={handleConfirmCancel}>Continuar Cancelamento</Button>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
 
             <Button 
               variant="outline" 
