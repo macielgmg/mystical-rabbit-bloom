@@ -126,7 +126,7 @@ const MyPrayerPage = () => {
     await refetchProfile(); // Atualiza o contexto da sessão para refletir o novo total_shares
 
     // Check and award achievements after sharing
-    const newAchievements = await checkAndAwardAchievements(session.user.id);
+    const { newAchievements } = await checkAndAwardAchievements(session.user.id); // Corrigido aqui
     newAchievements.forEach((ach, index) => {
       setTimeout(() => showAchievementToast(ach), index * 700);
     });

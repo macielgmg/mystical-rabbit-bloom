@@ -115,7 +115,7 @@ const SpiritualJournalPage = () => {
       await refetchProfile(); // Atualiza o contexto da sessão para refletir o novo total_journal_entries
       
       // Check and award achievements after saving
-      const newAchievements = await checkAndAwardAchievements(userId);
+      const { newAchievements } = await checkAndAwardAchievements(userId); // Corrigido aqui
       newAchievements.forEach((ach, index) => {
         setTimeout(() => showAchievementToast(ach), index * 700);
       });

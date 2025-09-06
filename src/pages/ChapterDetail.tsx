@@ -225,7 +225,7 @@ const ChapterDetail = () => {
       setIsCompleted(true);
       
       // Check and award achievements
-      const newAchievements = await checkAndAwardAchievements(session.user.id);
+      const { newAchievements } = await checkAndAwardAchievements(session.user.id); // Corrigido aqui
       newAchievements.forEach((ach, index) => {
         setTimeout(() => showAchievementToast(ach), index * 700);
       });

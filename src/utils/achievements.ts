@@ -47,7 +47,8 @@ export const checkAndAwardAchievements = async (userId: string): Promise<{ newAc
 
     if (!allAchievementsFromDb) {
       console.error("Não foi possível buscar a lista de conquistas do banco de dados.");
-      return { newAchievements: [], conditionData: { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false } };
+      const emptyConditionData: ConditionData = { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false };
+      return { newAchievements: [], conditionData: emptyConditionData };
     }
 
     const unlockedIds = new Set(unlockedAchievementsData?.map(a => a.achievement_id) || []);
@@ -128,6 +129,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<{ newAc
     return { newAchievements: [], conditionData };
   } catch (error) {
     console.error("Ocorreu um erro inesperado ao verificar as conquistas:", error);
-    return { newAchievements: [], conditionData: { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false } };
+    const emptyConditionData: ConditionData = { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false };
+    return { newAchievements: [], conditionData: emptyConditionData };
   }
 };

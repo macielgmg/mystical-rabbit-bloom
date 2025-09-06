@@ -93,7 +93,7 @@ const Today = () => {
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
-  const [completedContentDates, setCompletedContentDates] = useState<Set<string>>(new Set()); // Novo estado para datas com conteúdo
+  const [completedContentDates, setCompletedContentDates] = new Set<string>(); // Novo estado para datas com conteúdo
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -309,7 +309,7 @@ const Today = () => {
   useEffect(() => {
     const checkAchievementsOnLoad = async () => {
       if (session?.user && !loadingDailyContent && !isLoadingAnyDailyTask) {
-        const newAchievements = await checkAndAwardAchievements(session.user.id);
+        const { newAchievements } = await checkAndAwardAchievements(session.user.id); // Corrigido aqui
         newAchievements.forEach((ach, index) => {
           setTimeout(() => showAchievementToast(ach), index * 700);
         });

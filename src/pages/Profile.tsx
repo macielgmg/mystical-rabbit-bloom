@@ -135,7 +135,7 @@ const Profile = () => {
   useEffect(() => {
     const checkAchievementsOnLoad = async () => {
       if (session?.user && !loading) {
-        const newAchievements = await checkAndAwardAchievements(session.user.id);
+        const { newAchievements } = await checkAndAwardAchievements(session.user.id); // Corrigido aqui
         newAchievements.forEach((ach, index) => {
           setTimeout(() => showAchievementToast(ach), index * 700);
         });
