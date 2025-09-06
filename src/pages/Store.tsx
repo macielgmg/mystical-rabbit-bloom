@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/contexts/SessionContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Search, Star } from 'lucide-react'; // Importar Star
+import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { showError, showStudyAcquiredToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
@@ -316,21 +316,13 @@ const Store = () => {
                 ) : (
                   <Button
                     onClick={() => handleAcquireStudy(item.id, item.title)}
-                    className={cn(
-                      "w-full bg-primary hover:bg-primary/90"
-                    )}
+                    className="w-full bg-primary hover:bg-primary/90"
                     disabled={acquiringStudyId === item.id || (!item.is_free && !isUserPro)}
                   >
                     {acquiringStudyId === item.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2 text-primary-foreground" />
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
-                      !item.is_free && !isUserPro ? (
-                        <span className="flex items-center justify-center text-primary-foreground">
-                          Assinar Pro <Star className="h-4 w-4 ml-2 fill-yellow-300 text-yellow-300" />
-                        </span>
-                      ) : (
-                        <span className="text-primary-foreground">Adquirir</span>
-                      )
+                      !item.is_free && !isUserPro ? "Assinar Pro" : "Adquirir"
                     )}
                   </Button>
                 )}

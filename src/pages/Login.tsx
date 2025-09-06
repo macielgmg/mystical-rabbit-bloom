@@ -69,8 +69,8 @@ const Login = () => {
           variables: {
             default: {
               colors: {
-                brand: 'hsl(95 30% 25%)', // Ajustado para a nova cor primária
-                brandAccent: 'hsl(95 35% 20%)', // Ajustado para um tom mais escuro
+                brand: 'hsl(95 20% 35%)',
+                brandAccent: 'hsl(95 25% 30%)',
                 brandButtonText: 'hsl(60 90% 98%)',
                 inputBackground: 'hsl(var(--input))',
                 inputBorder: 'hsl(var(--border))',
