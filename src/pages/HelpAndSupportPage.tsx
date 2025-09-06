@@ -3,7 +3,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, HelpCircle, HeartHandshake, Star, Crown } from 'lucide-react';
+import { ArrowLeft, MessageSquare, HelpCircle, HeartHandshake, Star, Crown, Share2 } from 'lucide-react'; // Adicionado Share2
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Tabs,
@@ -21,6 +21,24 @@ const HelpAndSupportPage = () => {
   const handleWhatsappClick = () => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
     window.open(url, '_blank');
+  };
+
+  const handleShareApp = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Raízes da Fé - Seu aplicativo de estudo bíblico',
+        text: 'Aprofunde sua fé e conhecimento da Palavra de Deus diariamente com o Raízes da Fé!',
+        url: window.location.origin, // URL base do PWA
+      })
+      .then(() => console.log('App compartilhado com sucesso!'))
+      .catch((error) => console.error('Erro ao compartilhar:', error));
+    } else {
+      // Fallback para navegadores que não suportam a Web Share API
+      const shareText = `Aprofunde sua fé e conhecimento da Palavra de Deus diariamente com o Raízes da Fé! Acesse: ${window.location.origin}`;
+      navigator.clipboard.writeText(shareText)
+        .then(() => alert('Link do aplicativo copiado para a área de transferência!'))
+        .catch(() => alert('Não foi possível copiar o link do aplicativo.'));
+    }
   };
 
   return (
@@ -107,12 +125,15 @@ const HelpAndSupportPage = () => {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Star className="h-6 w-6 text-yellow-500 fill-yellow-500 flex-shrink-0 mt-1" />
+                  <Share2 className="h-6 w-6 text-primary flex-shrink-0 mt-1" /> {/* Ícone de compartilhamento */}
                   <div>
-                    <h3 className="font-semibold text-primary">Avalie o Aplicativo</h3>
+                    <h3 className="font-semibold text-primary">Compartilhe o App</h3>
                     <p className="text-muted-foreground text-sm">
-                      Deixe uma avaliação 5 estrelas na loja de aplicativos para nos ajudar a alcançar mais pessoas.
+                      Ajude-nos a alcançar mais pessoas compartilhando o Raízes da Fé com seus amigos e familiares!
                     </p>
+                    <Button variant="link" className="p-0 h-auto text-primary justify-start text-sm" onClick={handleShareApp}>
+                      Compartilhar Agora
+                    </Button>
                   </div>
                 </div>
               </div>
