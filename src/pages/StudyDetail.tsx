@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown, ChevronLeft, ChevronRight } from 'lucide-react'; // Importado ChevronLeft e ChevronRight
+import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import {
   AlertDialog,
@@ -19,7 +19,7 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
+  PaginationLink, // Importado PaginationLink
   PaginationNext,
   PaginationPrevious,
   PaginationEllipsis,
@@ -346,19 +346,25 @@ const StudyDetail = () => {
             <Pagination className="mt-8">
               <PaginationContent>
                 <PaginationItem>
-                  <Button asChild variant="ghost" size="icon" disabled={currentPage === 1}>
-                    <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>
-                      <ChevronLeft className="h-4 w-4" />
-                    </PaginationPrevious>
-                  </Button>
+                  <PaginationLink
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    isActive={false}
+                    className={cn("h-9 w-9 p-0", currentPage === 1 && "pointer-events-none opacity-50")}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="sr-only">Página anterior</span>
+                  </PaginationLink>
                 </PaginationItem>
                 {renderPaginationItems()}
                 <PaginationItem>
-                  <Button asChild variant="ghost" size="icon" disabled={currentPage === totalPages}>
-                    <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>
-                      <ChevronRight className="h-4 w-4" />
-                    </PaginationNext>
-                  </Button>
+                  <PaginationLink
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    isActive={false}
+                    className={cn("h-9 w-9 p-0", currentPage === totalPages && "pointer-events-none opacity-50")}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="sr-only">Próxima página</span>
+                  </PaginationLink>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
