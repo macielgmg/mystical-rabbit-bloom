@@ -68,6 +68,10 @@
 }
 
 @layer base {
+  html, body, #root { /* Adicionado #root também para garantir que o container React tenha altura */
+    height: 100%;
+  }
+
   * {
     @apply border-border;
   }
