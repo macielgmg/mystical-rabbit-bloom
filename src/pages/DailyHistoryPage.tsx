@@ -114,7 +114,7 @@ const DailyHistoryPage = () => {
               (supabase.from('daily_content_templates')
                 .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
                 .eq('id', templateId)
-                .single() as Promise<any>) // Adicionado asserção de tipo aqui
+                .single() as unknown as Promise<any>) // Adicionado 'as unknown' aqui
                 .then(({ data, error }) => {
                   if (error) console.error(`Error fetching template for ${field}:`, error);
                   if (data) {
