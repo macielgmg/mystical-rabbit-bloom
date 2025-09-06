@@ -386,12 +386,6 @@ const DailyHistoryPage = () => {
           ))}
         </div>
       </Tabs>
-
-      <div className="flex justify-center py-4 flex-shrink-0">
-        <Button onClick={() => navigate('/today')} className="w-full">
-          Voltar para Hoje
-        </Button>
-      </div>
     </div>
   );
 };
