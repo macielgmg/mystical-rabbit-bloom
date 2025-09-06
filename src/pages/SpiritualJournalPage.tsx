@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { format }t from 'date-fns';
+import { format } from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -202,7 +202,7 @@ const SpiritualJournalPage = () => {
           disabled={isSaving}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-            isLastTaskForButton ? ( // Usar isLastTaskForButton aqui
+            isLastTaskForButton ? (
               <>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Finalizar Jornada
