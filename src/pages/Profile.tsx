@@ -99,13 +99,23 @@ const fetchProfileData = async (userId: string) => {
   if (allAchievementsError) throw allAchievementsError;
   if (unlockedAchievementsError) throw unlockedAchievementsError;
 
+  const unlockedAchievementIds = new Set(unlockedAchievementsData?.map(a => a.achievement_id) || []);
+  const allAchievements: Achievement[] = allAchievementsData || [];
+
+  // Separar conquistas desbloqueadas e não desbloqueadas
+  const unlocked = allAchievements.filter(ach => unlockedAchievementIds.has(ach.id));
+  const locked = allAchievements.filter(ach => !unlockedAchievementIds.has(ach.id));
+
+  // Combinar, colocando as desbloqueadas primeiro
+  const sortedAchievements = [...unlocked, ...locked];
+
   return {
     stats: {
       streak: profileData?.streak_count || 0,
       chaptersCompleted: count || 0,
     },
-    allAchievements: allAchievementsData || [],
-    unlockedAchievementIds: new Set(unlockedAchievementsData?.map(a => a.achievement_id) || []),
+    allAchievements: sortedAchievements, // Retorna a lista ordenada
+    unlockedAchievementIds: unlockedAchievementIds,
   };
 };
 
@@ -148,7 +158,7 @@ const Profile = () => {
   };
 
   const stats = data?.stats || { streak: 0, chaptersCompleted: 0 };
-  const allAchievements = data?.allAchievements || [];
+  const sortedAchievements = data?.allAchievements || []; // Usar a lista já ordenada
   const unlockedAchievementIds = data?.unlockedAchievementIds || new Set();
 
   return (
@@ -194,7 +204,7 @@ const Profile = () => {
           <div className="w-full flex justify-center items-center h-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
-            {allAchievements.slice(0, 5).map((ach) => (
+            {sortedAchievements.slice(0, 5).map((ach) => (
               <div className="w-24 flex-shrink-0" key={ach.id}>
                 <AchievementCard 
                   title={ach.name} 
