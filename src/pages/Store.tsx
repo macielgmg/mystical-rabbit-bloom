@@ -316,7 +316,12 @@ const Store = () => {
                 ) : (
                   <Button
                     onClick={() => handleAcquireStudy(item.id, item.title)}
-                    className="w-full bg-primary hover:bg-primary/90"
+                    className={cn(
+                      "w-full",
+                      !item.is_free && !isUserPro
+                        ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" // Estilo menos proeminente para "Assinar Pro"
+                        : "bg-primary hover:bg-primary/90" // Estilo padrão para "Adquirir"
+                    )}
                     disabled={acquiringStudyId === item.id || (!item.is_free && !isUserPro)}
                   >
                     {acquiringStudyId === item.id ? (
