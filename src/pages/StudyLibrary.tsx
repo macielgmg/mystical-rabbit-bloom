@@ -149,10 +149,10 @@ const StudyLibrary = () => {
     setShowProAccessModal(true);
   };
 
-  // Filtra os estudos para exibir apenas aqueles com pelo menos 1 capítulo concluído
-  const studiesWithActualProgress = studiesWithProgress.filter(study => study.completedChapters > 0);
+  // Filtra os estudos para exibir apenas aqueles que foram adquiridos (isAcquired é true)
+  const acquiredStudies = studiesWithProgress.filter(study => study.isAcquired);
 
-  const filteredStudies = studiesWithActualProgress.filter(study => {
+  const filteredStudies = acquiredStudies.filter(study => {
     const query = searchQuery.toLowerCase();
     return (
       study.title.toLowerCase().includes(query) ||
@@ -173,7 +173,7 @@ const StudyLibrary = () => {
       <h1 className="text-3xl font-bold mb-2 text-primary">Meus Estudos</h1>
       <p className="text-muted-foreground mb-6">Continue de onde parou ou comece uma nova jornada.</p>
       
-      {studiesWithActualProgress.length > 0 && ( // Mostra a barra de pesquisa apenas se houver estudos com progresso
+      {acquiredStudies.length > 0 && ( // Mostra a barra de pesquisa apenas se houver estudos adquiridos
         <div className="mb-6 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
