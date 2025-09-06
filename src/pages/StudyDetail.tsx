@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown } from 'lucide-react';
+import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown, ChevronLeft, ChevronRight } from 'lucide-react'; // Importado ChevronLeft e ChevronRight
 import { useSession } from '@/contexts/SessionContext';
 import {
   AlertDialog,
@@ -347,13 +347,17 @@ const StudyDetail = () => {
               <PaginationContent>
                 <PaginationItem>
                   <Button asChild variant="ghost" size="icon" disabled={currentPage === 1}>
-                    <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                    <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationPrevious>
                   </Button>
                 </PaginationItem>
                 {renderPaginationItems()}
                 <PaginationItem>
                   <Button asChild variant="ghost" size="icon" disabled={currentPage === totalPages}>
-                    <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                    <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationNext>
                   </Button>
                 </PaginationItem>
               </PaginationContent>
