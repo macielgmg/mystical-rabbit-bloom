@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, X } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,11 +13,11 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
   const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,13 +125,13 @@ const VerseOfTheDayPage = () => {
   };
 
   const handleCompleteTask = async () => {
-    if (!session) {
+    if (!session?.user) { // Adicionado verificação de session.user
       showError("Você precisa estar logado para finalizar.");
       return;
     }
     setIsCompleting(true);
     const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
+    const userId = session.user.id; // Definindo userId aqui
 
     try {
       const { error } = await supabase

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
+import { ArrowLeft, Loader2, Heart, Share2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,13 +13,13 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const MyPrayerPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [prayerContent, setPrayerContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null); // Alterado para 'auxiliar_text'
+  const [prayerContent, setPrayerContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const MyPrayerPage = () => {
       if (prayerTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, auxiliar_text, url_audio') // Alterado para 'auxiliar_text'
+          .select('text_content, auxiliar_text, url_audio')
           .eq('id', prayerTemplateId)
           .single();
 
@@ -123,13 +123,13 @@ const MyPrayerPage = () => {
   };
 
   const handleCompleteTask = async () => {
-    if (!session) {
+    if (!session?.user) { // Adicionado verificação de session.user
       showError("Você precisa estar logado para finalizar.");
       return;
     }
     setIsCompleting(true);
     const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
+    const userId = session.user.id; // Definindo userId aqui
 
     try {
       const { error } = await supabase

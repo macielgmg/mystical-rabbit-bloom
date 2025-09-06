@@ -4,14 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Loader2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
+import { ArrowLeft, Loader2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
-import { cn } from '@/lib/utils'; // Importar cn para combinar classes
-import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
+import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -21,7 +21,7 @@ const sliderLabels = [
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
-  const queryClient = useQueryClient(); // Inicializar useQueryClient
+  const queryClient = useQueryClient();
   const [spiritualState, setSpiritualState] = useState([4]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -49,7 +49,7 @@ const SpiritualJournalPage = () => {
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true });
   const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true });
-  const isFirstTask = isFirstTaskInSequence(currentTaskName); // Deve ser true para esta página
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchInitialState = async () => {
@@ -75,19 +75,20 @@ const SpiritualJournalPage = () => {
   }, [session, currentTaskName]);
 
   const handleSave = async () => {
-    if (!session) {
+    if (!session?.user) { // Adicionado verificação de session.user
       showError("Você precisa estar logado para salvar.");
       return;
     }
     setIsSaving(true);
     const today = format(new Date(), 'yyyy-MM-dd');
     const newValue = spiritualState[0];
+    const userId = session.user.id; // Definindo userId aqui
 
     try {
       const { error } = await supabase
         .from('daily_tasks_progress')
         .upsert({
-          user_id: session.user.id,
+          user_id: userId,
           task_name: currentTaskName,
           task_date: today,
           value: newValue,

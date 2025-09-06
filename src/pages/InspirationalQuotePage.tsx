@@ -19,7 +19,7 @@ const InspirationalQuotePage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null>(null); // Adicionado explanation
+  const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const InspirationalQuotePage = () => {
       if (quoteTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, auxiliar_text, explanation, url_audio') // Adicionado explanation
+          .select('text_content, auxiliar_text, explanation, url_audio')
           .eq('id', quoteTemplateId)
           .single();
 
@@ -91,7 +91,7 @@ const InspirationalQuotePage = () => {
           setQuoteContent({ 
             text: templateData.text_content, 
             auxiliar_text: templateData.auxiliar_text || null, 
-            explanation: templateData.explanation || null, // Definir explanation
+            explanation: templateData.explanation || null,
             url_audio: templateData.url_audio || null 
           });
         } else {
@@ -140,13 +140,13 @@ const InspirationalQuotePage = () => {
   };
 
   const handleCompleteTask = async () => {
-    if (!session) {
+    if (!session?.user) { // Adicionado verificação de session.user
       showError("Você precisa estar logado para finalizar.");
       return;
     }
     setIsCompleting(true);
     const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
+    const userId = session.user.id; // Definindo userId aqui
 
     try {
       const { error } = await supabase

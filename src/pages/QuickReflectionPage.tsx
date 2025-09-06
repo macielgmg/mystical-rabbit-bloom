@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
+import { ArrowLeft, Loader2, Lightbulb, Share2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -126,13 +126,13 @@ const QuickReflectionPage = () => {
   };
 
   const handleCompleteTask = async () => {
-    if (!session) {
+    if (!session?.user) { // Adicionado verificação de session.user
       showError("Você precisa estar logado para finalizar.");
       return;
     }
     setIsCompleting(true);
     const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id;
+    const userId = session.user.id; // Definindo userId aqui
 
     try {
       const { error } = await supabase
