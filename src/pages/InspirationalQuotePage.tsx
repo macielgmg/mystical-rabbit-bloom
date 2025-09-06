@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X } from 'lucide-react'; // Adicionado X
-import { showError } from '@/utils/toast';
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -253,11 +253,15 @@ const InspirationalQuotePage = () => {
           className={cn("flex-1", isFirstTask ? "w-full" : "")}
           disabled={isCompleting || !quoteContent?.text}
         >
-          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {isLastTask ? "Finalizar Jornada" : "Continuar"}
-            </>
+          {isCompleting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+            isLastTask ? (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Finalizar Jornada
+              </>
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )
           )}
         </Button>
       </div>

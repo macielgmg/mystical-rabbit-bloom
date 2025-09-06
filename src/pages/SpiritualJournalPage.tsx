@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, Loader2, CheckCircle, X } from 'lucide-react'; // Adicionado X
+import { ArrowLeft, Loader2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
@@ -171,11 +171,15 @@ const SpiritualJournalPage = () => {
           className="flex-1 w-full"
           disabled={isSaving}
         >
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {isLastTask ? "Finalizar Jornada" : "Continuar"}
-            </>
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+            isLastTask ? (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Finalizar Jornada
+              </>
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )
           )}
         </Button>
       </div>
