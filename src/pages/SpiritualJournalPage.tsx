@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { format } from 'date-fns';
+import { format }t from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,6 +17,11 @@ const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
   "Buscando", "Conectado", "Próximo", "Completamente Abraçado"
 ];
+
+// Helper para obter a chave do status de conclusão
+const getCompletionStatusKey = (taskName: string) => {
+  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
+};
 
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
@@ -47,8 +52,7 @@ const SpiritualJournalPage = () => {
     isMyPrayerTaskCompleted,
   };
 
-  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isJournalCompleted: true });
-  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isJournalCompleted: true });
+  // isFirstTask pode ser calculado fora do handleSave, pois não depende do estado de conclusão atual
   const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
@@ -75,14 +79,14 @@ const SpiritualJournalPage = () => {
   }, [session, currentTaskName]);
 
   const handleSave = async () => {
-    if (!session?.user) { // Adicionado verificação de session.user
+    if (!session?.user) {
       showError("Você precisa estar logado para salvar.");
       return;
     }
     setIsSaving(true);
     const today = format(new Date(), 'yyyy-MM-dd');
     const newValue = spiritualState[0];
-    const userId = session.user.id; // Definindo userId aqui
+    const userId = session.user.id;
 
     try {
       const { error } = await supabase
@@ -98,6 +102,15 @@ const SpiritualJournalPage = () => {
         throw error;
       }
       
+      // Simula o status de conclusão da tarefa atual para a lógica de navegação
+      const simulatedCompletionStatus = {
+        ...completionStatus,
+        [getCompletionStatusKey(currentTaskName)]: true,
+      };
+
+      const isLastTaskAfterCompletion = isLastTaskInSequenceAndAllCompleted(currentTaskName, simulatedCompletionStatus);
+      const nextTaskPathAfterCompletion = getNextIncompleteTaskPath(currentTaskName, simulatedCompletionStatus);
+
       // Invalida todas as queries de progresso diário para garantir a atualização
       queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
@@ -106,10 +119,12 @@ const SpiritualJournalPage = () => {
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
 
-      if (nextTaskPath) {
-        navigate(nextTaskPath);
-      } else {
+      if (nextTaskPathAfterCompletion) {
+        navigate(nextTaskPathAfterCompletion);
+      } else if (isLastTaskAfterCompletion) {
         navigate('/today');
+      } else {
+        navigate('/today'); // Fallback caso algo inesperado aconteça
       }
     } catch (error: any) {
       showError("Erro ao salvar seu progresso: " + error.message);
@@ -118,6 +133,10 @@ const SpiritualJournalPage = () => {
       setIsSaving(false);
     }
   };
+
+  // O cálculo de isLastTask para o botão deve usar o estado atual, não o simulado
+  const isLastTaskForButton = isLastTaskInSequenceAndAllCompleted(currentTaskName, completionStatus);
+
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -176,14 +195,14 @@ const SpiritualJournalPage = () => {
         </div>
       </div>
 
-      <div className="flex justify-end items-center py-4 gap-2 flex-shrink-0"> {/* Apenas o botão de continuar */}
+      <div className="flex justify-end items-center py-4 gap-2 flex-shrink-0">
         <Button 
           onClick={handleSave} 
           className="flex-1 w-full"
           disabled={isSaving}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-            isLastTask ? (
+            isLastTaskForButton ? ( // Usar isLastTaskForButton aqui
               <>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Finalizar Jornada

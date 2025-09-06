@@ -22,6 +22,11 @@ import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirst
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
+// Helper para obter a chave do status de conclusão
+const getCompletionStatusKey = (taskName: string) => {
+  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
+};
+
 const DailyStudyPage = () => {
   const navigate = useNavigate();
   const { session, preferences, isPro } = useSession();
@@ -52,10 +57,9 @@ const DailyStudyPage = () => {
     isMyPrayerTaskCompleted,
   };
 
-  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isDailyStudyTaskCompleted: true });
-  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isDailyStudyTaskCompleted: true });
-  const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  // isFirstTask e previousTaskPath podem ser calculados fora do handleCompleteTask
   const isFirstTask = isFirstTaskInSequence(currentTaskName);
+  const previousTaskPath = getPreviousTaskPath(currentTaskName);
 
   useEffect(() => {
     const fetchStudy = async () => {
@@ -133,13 +137,13 @@ const DailyStudyPage = () => {
   };
 
   const handleCompleteTask = async () => {
-    if (!session?.user) { // Adicionado verificação de session.user
+    if (!session?.user) {
       showError("Você precisa estar logado para finalizar.");
       return;
     }
     setIsCompleting(true);
     const today = new Date().toISOString().split('T')[0];
-    const userId = session.user.id; // Definindo userId aqui
+    const userId = session.user.id;
 
     try {
       const { error } = await supabase
@@ -155,6 +159,15 @@ const DailyStudyPage = () => {
         throw error;
       }
       
+      // Simula o status de conclusão da tarefa atual para a lógica de navegação
+      const simulatedCompletionStatus = {
+        ...completionStatus,
+        [getCompletionStatusKey(currentTaskName)]: true,
+      };
+
+      const isLastTaskAfterCompletion = isLastTaskInSequenceAndAllCompleted(currentTaskName, simulatedCompletionStatus);
+      const nextTaskPathAfterCompletion = getNextIncompleteTaskPath(currentTaskName, simulatedCompletionStatus);
+
       // Invalida todas as queries de progresso diário para garantir a atualização
       queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
@@ -163,10 +176,12 @@ const DailyStudyPage = () => {
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
-      if (nextTaskPath) {
-        navigate(nextTaskPath);
-      } else {
+      if (nextTaskPathAfterCompletion) {
+        navigate(nextTaskPathAfterCompletion);
+      } else if (isLastTaskAfterCompletion) {
         navigate('/today');
+      } else {
+        navigate('/today'); // Fallback
       }
     } catch (error: any) {
       showError("Erro ao finalizar o estudo: " + error.message);
@@ -219,6 +234,9 @@ const DailyStudyPage = () => {
     }
     return tag;
   };
+
+  // O cálculo de isLastTask para o botão deve usar o estado atual, não o simulado
+  const isLastTaskForButton = isLastTaskInSequenceAndAllCompleted(currentTaskName, completionStatus);
 
   if (loading || isLoadingAnyDailyTask) {
     return (
@@ -387,7 +405,7 @@ const DailyStudyPage = () => {
           disabled={isCompleting || !studyContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
-            isLastTask ? (
+            isLastTaskForButton ? ( // Usar isLastTaskForButton aqui
               <>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Finalizar Jornada
