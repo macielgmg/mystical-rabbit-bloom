@@ -149,7 +149,10 @@ const StudyLibrary = () => {
     setShowProAccessModal(true);
   };
 
-  const filteredStudies = studiesWithProgress.filter(study => {
+  // Filtra os estudos para exibir apenas aqueles com pelo menos 1 capítulo concluído
+  const studiesWithActualProgress = studiesWithProgress.filter(study => study.completedChapters > 0);
+
+  const filteredStudies = studiesWithActualProgress.filter(study => {
     const query = searchQuery.toLowerCase();
     return (
       study.title.toLowerCase().includes(query) ||
@@ -170,7 +173,7 @@ const StudyLibrary = () => {
       <h1 className="text-3xl font-bold mb-2 text-primary">Meus Estudos</h1>
       <p className="text-muted-foreground mb-6">Continue de onde parou ou comece uma nova jornada.</p>
       
-      {studiesWithProgress.length > 0 && (
+      {studiesWithActualProgress.length > 0 && ( // Mostra a barra de pesquisa apenas se houver estudos com progresso
         <div className="mb-6 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -183,61 +186,54 @@ const StudyLibrary = () => {
         </div>
       )}
 
-      {studiesWithProgress.length > 0 ? (
-        filteredStudies.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredStudies.map((study) => (
-              <Card key={study.id} className="flex flex-col overflow-hidden">
-                <img
-                  src={study.imageUrl}
-                  alt={`Capa do estudo ${study.title}`}
-                  className="w-full h-32 object-cover"
-                />
-                <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg font-semibold leading-tight">{study.title}</CardTitle>
-                    {!study.is_free && <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-500/80 text-white">Pro</Badge>}
-                  </div>
-                  <CardDescription className="text-sm mt-1">{study.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-2 p-4">
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Progresso:</span>
-                    <span>{study.completedChapters} de {study.totalChapters}</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: `${study.progressPercentage}%` }}></div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4">
-                  {!study.is_free && !isUserPro ? (
-                    <Button
-                      onClick={() => handleProStudyAccessAttempt(study.title)}
-                      className="w-full bg-primary hover:bg-primary/90"
-                    >
-                      Acessar (Pro)
-                    </Button>
-                  ) : (
-                    <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                      <Link to={`/study/${study.id}`}>
-                        {study.completedChapters === 0
-                          ? "Começar Estudo"
-                          : study.completedChapters === study.totalChapters
-                            ? "Revisar Estudo"
-                            : "Continuar Estudo"}
-                      </Link>
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 border-2 border-dashed rounded-lg">
-            <h2 className="text-xl font-semibold text-primary">Nenhum resultado encontrado</h2>
-            <p className="text-muted-foreground mt-2">Tente pesquisar com outros termos.</p>
-          </div>
-        )
+      {filteredStudies.length > 0 ? ( // Verifica filteredStudies para exibir os cards
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredStudies.map((study) => (
+            <Card key={study.id} className="flex flex-col overflow-hidden">
+              <img
+                src={study.imageUrl}
+                alt={`Capa do estudo ${study.title}`}
+                className="w-full h-32 object-cover"
+              />
+              <CardHeader className="p-4">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg font-semibold leading-tight">{study.title}</CardTitle>
+                  {!study.is_free && <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-500/80 text-white">Pro</Badge>}
+                </div>
+                <CardDescription className="text-sm mt-1">{study.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow space-y-2 p-4">
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <span>Progresso:</span>
+                  <span>{study.completedChapters} de {study.totalChapters}</span>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full" style={{ width: `${study.progressPercentage}%` }}></div>
+                </div>
+              </CardContent>
+              <CardFooter className="p-4">
+                {!study.is_free && !isUserPro ? (
+                  <Button
+                    onClick={() => handleProStudyAccessAttempt(study.title)}
+                    className="w-full bg-primary hover:bg-primary/90"
+                  >
+                    Acessar (Pro)
+                  </Button>
+                ) : (
+                  <Button asChild className="w-full bg-primary hover:bg-primary/90">
+                    <Link to={`/study/${study.id}`}>
+                      {study.completedChapters === 0
+                        ? "Começar Estudo"
+                        : study.completedChapters === study.totalChapters
+                          ? "Revisar Estudo"
+                          : "Continuar Estudo"}
+                    </Link>
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
             <h2 className="text-xl font-semibold text-primary">Nenhum estudo iniciado</h2>
