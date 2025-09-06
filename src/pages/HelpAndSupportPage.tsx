@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageSquare, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const WHATSAPP_NUMBER = "5511999999999"; // Substitua pelo número de WhatsApp real
+const WHATSAPP_NUMBER = "5531936182392"; // Número de WhatsApp atualizado
 const WHATSAPP_MESSAGE = "Olá! Preciso de ajuda com o aplicativo Raízes da Fé.";
 
 const HelpAndSupportPage = () => {
