@@ -93,7 +93,7 @@ const Today = () => {
   const queryClient = useQueryClient();
   const [actualDailyContent, setActualDailyContent] = useState<DailyContentActual | null>(null);
   const [loadingDailyContent, setLoadingDailyContent] = useState(true);
-  const [completedContentDates, setCompletedContentDates] = new Set<string>(); // Novo estado para datas com conteúdo
+  const [completedContentDates, setCompletedContentDates] = useState<Set<string>>(new Set<string>()); // CORRIGIDO: Usando useState
 
   // Usar o novo hook para o progresso das tarefas diárias
   const { 
@@ -153,7 +153,7 @@ const Today = () => {
       console.error("Erro ao buscar todas as datas de conteúdo diário:", allEntriesError);
     } else if (allDailyContentEntries) {
       const dates = new Set(allDailyContentEntries.map(entry => entry.content_date));
-      setCompletedContentDates(dates);
+      setCompletedContentDates(dates); // CORRIGIDO: Passando o Set para a função de atualização
     }
 
     let currentDailyContentIds: DailyContentTemplateIds | null = null;
