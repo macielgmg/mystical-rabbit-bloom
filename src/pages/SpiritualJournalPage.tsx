@@ -13,6 +13,8 @@ import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirst
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
+import { checkAndAwardAchievements } from '@/utils/achievements'; // Importar a função de verificação de conquistas
+import { showAchievementToast } from '@/utils/toast'; // Importar o toast de conquista
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -21,7 +23,7 @@ const sliderLabels = [
 
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, refetchProfile } = useSession(); // Adicionado refetchProfile
   const queryClient = useQueryClient();
   const [spiritualState, setSpiritualState] = useState([4]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +101,25 @@ const SpiritualJournalPage = () => {
       if (error) {
         throw error;
       }
+
+      // Increment total_journal_entries in profiles table
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .rpc('increment_total_journal_entries', { user_id: userId }); // Usar RPC para incrementar
+
+      if (updateProfileError) {
+        console.error("Erro ao incrementar total_journal_entries:", updateProfileError);
+        showError("Erro ao registrar a entrada do diário.");
+        setIsSaving(false);
+        return;
+      }
+      await refetchProfile(); // Atualiza o contexto da sessão para refletir o novo total_journal_entries
+      
+      // Check and award achievements after saving
+      const newAchievements = await checkAndAwardAchievements(userId);
+      newAchievements.forEach((ach, index) => {
+        setTimeout(() => showAchievementToast(ach), index * 700);
+      });
       
       // Simula o status de conclusão da tarefa atual para a lógica de navegação
       const simulatedCompletionStatus = {

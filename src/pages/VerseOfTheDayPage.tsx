@@ -15,12 +15,14 @@ import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath, getCompletionStatusKey } from '@/utils/dailyTasksSequence'; // Importar getCompletionStatusKey
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
+import { checkAndAwardAchievements } from '@/utils/achievements'; // Importar a função de verificação de conquistas
+import { showAchievementToast } from '@/utils/toast'; // Importar o toast de conquista
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession();
+  const { session, isPro, refetchProfile } = useSession(); // Adicionado refetchProfile
   const queryClient = useQueryClient();
-  const [verseContent, setVerseContent] = useState<{ text: string; reference: string; url_audio: string | null } | null>(null);
+  const [verseContent, setVerseContent] = useState<{ text: string; reference: string; explanation: string | null; url_audio: string | null } | null>(null); // Adicionado explanation
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -84,7 +86,7 @@ const VerseOfTheDayPage = () => {
         // 2. Usar o ID do template para buscar o conteúdo real do template
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, reference, url_audio')
+          .select('text_content, reference, explanation, url_audio') // Adicionado explanation
           .eq('id', verseTemplateId)
           .single();
 
@@ -96,6 +98,7 @@ const VerseOfTheDayPage = () => {
           setVerseContent({
             text: templateData.text_content,
             reference: templateData.reference || 'Versículo do Dia',
+            explanation: templateData.explanation || null, // Definir explanation
             url_audio: templateData.url_audio || null,
           });
         } else {
@@ -109,18 +112,52 @@ const VerseOfTheDayPage = () => {
     fetchVerse();
   }, [session, navigate]);
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    if (!session?.user) {
+      showError("Você precisa estar logado para compartilhar.");
+      return;
+    }
+
+    // Increment total_shares in profiles table
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .rpc('increment_total_shares', { user_id: session.user.id }); // Usar RPC para incrementar
+
+    if (updateError) {
+      console.error("Erro ao incrementar total_shares:", updateError);
+      showError("Erro ao registrar o compartilhamento.");
+      return;
+    }
+    await refetchProfile(); // Atualiza o contexto da sessão para refletir o novo total_shares
+
+    // Check and award achievements after sharing
+    const newAchievements = await checkAndAwardAchievements(session.user.id);
+    newAchievements.forEach((ach, index) => {
+      setTimeout(() => showAchievementToast(ach), index * 700);
+    });
+
     if (navigator.share && verseContent) {
+      let shareText = `"${verseContent.text}" — ${verseContent.reference}\n\n`;
+      if (verseContent.explanation) {
+        shareText += `Explicação: ${verseContent.explanation}\n\n`;
+      }
+      shareText += `Confira o app Raízes da Fé!`;
+
       navigator.share({
         title: 'Versículo do Dia - Raízes da Fé',
-        text: `"${verseContent.text}" — ${verseContent.reference}\n\nConfira o app Raízes da Fé!`,
+        text: shareText,
         url: window.location.href,
       })
       .then(() => showSuccess('Versículo compartilhado com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
       // Fallback para navegadores que não suportam a Web Share API
-      const shareText = `"${verseContent?.text || ''}" — ${verseContent?.reference || 'Versículo do Dia'}\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      let shareText = `"${verseContent?.text || ''}" — ${verseContent?.reference || 'Versículo do Dia'}\n\n`;
+      if (verseContent?.explanation) {
+        shareText += `Explicação: ${verseContent.explanation}\n\n`;
+      }
+      shareText += `Confira o app Raízes da Fé: ${window.location.href}`;
+
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Versículo copiado para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar o versículo.'));
@@ -236,6 +273,14 @@ const VerseOfTheDayPage = () => {
             <p className="text-lg font-semibold text-muted-foreground">
               — {verseContent.reference}
             </p>
+            {verseContent.explanation && ( // Exibir explicação se disponível
+              <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
+                <h3 className="text-xl font-bold text-primary/90 mb-2">Explicação</h3>
+                <p className="text-base text-muted-foreground leading-relaxed">
+                  {verseContent.explanation}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center text-muted-foreground">

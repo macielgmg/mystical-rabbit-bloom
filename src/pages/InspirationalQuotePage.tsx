@@ -15,10 +15,12 @@ import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
+import { checkAndAwardAchievements } from '@/utils/achievements'; // Importar a função de verificação de conquistas
+import { showAchievementToast } from '@/utils/toast'; // Importar o toast de conquista
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession();
+  const { session, isPro, refetchProfile } = useSession(); // Adicionado refetchProfile
   const queryClient = useQueryClient();
   const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +109,30 @@ const InspirationalQuotePage = () => {
     fetchQuote();
   }, [session, navigate]);
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    if (!session?.user) {
+      showError("Você precisa estar logado para compartilhar.");
+      return;
+    }
+
+    // Increment total_shares in profiles table
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .rpc('increment_total_shares', { user_id: session.user.id }); // Usar RPC para incrementar
+
+    if (updateError) {
+      console.error("Erro ao incrementar total_shares:", updateError);
+      showError("Erro ao registrar o compartilhamento.");
+      return;
+    }
+    await refetchProfile(); // Atualiza o contexto da sessão para refletir o novo total_shares
+
+    // Check and award achievements after sharing
+    const newAchievements = await checkAndAwardAchievements(session.user.id);
+    newAchievements.forEach((ach, index) => {
+      setTimeout(() => showAchievementToast(ach), index * 700);
+    });
+
     if (navigator.share && quoteContent?.text) {
       let shareText = `Citação Inspiradora: "${quoteContent.text}"\n\n`;
       if (quoteContent.auxiliar_text) {

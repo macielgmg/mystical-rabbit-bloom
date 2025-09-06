@@ -19,6 +19,8 @@ interface SessionContextType {
   proAccessEndAt: string | null; // Novo campo
   paymentStatus: string | null; // Novo campo
   enablePopups: boolean; // Novo campo para controlar pop-ups
+  totalShares: number; // Novo campo
+  totalJournalEntries: number; // Novo campo
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -38,6 +40,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [proAccessEndAt, setProAccessEndAt] = useState<string | null>(null); // Novo estado
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null); // Novo estado
   const [enablePopups, setEnablePopups] = useState(true); // Novo estado, padrão TRUE
+  const [totalShares, setTotalShares] = useState(0); // Novo estado
+  const [totalJournalEntries, setTotalJournalEntries] = useState(0); // Novo estado
 
   const fetchProfile = useCallback(async (user: User | null) => {
     if (!user) {
@@ -53,13 +57,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setProAccessEndAt(null);
       setPaymentStatus(null);
       setEnablePopups(true); // Resetar para padrão
+      setTotalShares(0); // Resetar
+      setTotalJournalEntries(0); // Resetar
       return;
     }
 
     console.log('fetchProfile: Fetching profile for user ID:', user.id);
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('is_pro, first_name, last_name, avatar_url, onboarding_completed, quiz_responses, preferences, daily_verse_notifications, study_reminders, achievement_notifications, recurrence, current_billing_period_start, pro_access_end_at, payment_status, enable_popups') // Adicionado pro_access_end_at, payment_status e enable_popups
+      .select('is_pro, first_name, last_name, avatar_url, onboarding_completed, quiz_responses, preferences, daily_verse_notifications, study_reminders, achievement_notifications, recurrence, current_billing_period_start, pro_access_end_at, payment_status, enable_popups, total_shares, total_journal_entries') // Adicionado pro_access_end_at, payment_status, enable_popups, total_shares, total_journal_entries
       .eq('id', user.id)
       .single();
 
@@ -76,6 +82,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setProAccessEndAt(null);
       setPaymentStatus(null);
       setEnablePopups(true); // Resetar para padrão em caso de erro
+      setTotalShares(0); // Resetar
+      setTotalJournalEntries(0); // Resetar
     } else if (profile) {
       console.log('fetchProfile: Profile data received:', profile);
       
@@ -99,6 +107,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setProAccessEndAt(profile.pro_access_end_at || null); // Definir novo estado
       setPaymentStatus(profile.payment_status || null); // Definir novo estado
       setEnablePopups(profile.enable_popups ?? true); // Definir novo estado, padrão TRUE
+      setTotalShares(profile.total_shares ?? 0); // Definir novo estado
+      setTotalJournalEntries(profile.total_journal_entries ?? 0); // Definir novo estado
       console.log('fetchProfile: Set onboardingCompleted to:', profile.onboarding_completed ?? false);
     } else {
       console.log('fetchProfile: Profile not found for user ID:', user.id, 'Using user_metadata for name.');
@@ -113,6 +123,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setProAccessEndAt(null);
       setPaymentStatus(null);
       setEnablePopups(true); // Padrão TRUE se perfil não encontrado
+      setTotalShares(0); // Padrão 0
+      setTotalJournalEntries(0); // Padrão 0
       console.log('fetchProfile: Set onboardingCompleted to false (profile not found).');
     }
   }, []);
@@ -217,6 +229,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       proAccessEndAt, // Adicionado
       paymentStatus, // Adicionado
       enablePopups, // Adicionado
+      totalShares, // Adicionado
+      totalJournalEntries, // Adicionado
     }}>
       {children}
     </SessionContext.Provider>
