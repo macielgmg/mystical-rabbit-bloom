@@ -211,7 +211,7 @@ const DailyHistoryPage = () => {
         <div className="text-center text-muted-foreground py-16">
           <CalendarIcon className="h-24 w-24 text-muted-foreground/50 mx-auto mb-4" />
           <p className="text-lg">Nenhum conteúdo encontrado para {formattedDate}.</p>
-          <p className="text-sm">Parece que você não teve uma jornada de fé neste dia.</p>
+          <p className="text-sm">Que tal começar uma nova jornada de fé hoje?</p> {/* Mensagem alterada aqui */}
           <Button onClick={() => navigate('/today')} className="mt-4">
             Voltar para Hoje
           </Button>
@@ -241,7 +241,7 @@ const DailyHistoryPage = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-primary">{formattedDate}</h1> {/* Alterado aqui */}
+        <h1 className="text-xl font-bold text-primary">{formattedDate}</h1>
       </header>
 
       {/* Indicador de Progresso Diário */}
@@ -256,15 +256,15 @@ const DailyHistoryPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-6 h-auto p-1"> {/* Aumentado mb-4 para mb-6, adicionado h-auto e p-1 */}
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-6 h-auto p-1">
           {availableTabs.map(tab => (
             <TabsTrigger 
               key={tab.id} 
               value={tab.id} 
-              className="flex flex-col items-center gap-1 text-sm sm:text-base h-16 px-2 py-2" // Aumentado text-xs para text-sm, adicionado h-16 e padding
+              className="flex flex-col items-center gap-1 text-sm sm:text-base h-16 px-2 py-2"
             >
               {getTaskCompletionIcon(tab.id)}
-              <tab.icon className="h-5 w-5" /> {/* Aumentado ícone */}
+              <tab.icon className="h-5 w-5" />
               {tab.label}
             </TabsTrigger>
           ))}
