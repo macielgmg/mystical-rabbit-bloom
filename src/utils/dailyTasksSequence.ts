@@ -60,3 +60,8 @@ export const getPreviousTaskPath = (currentTaskName: string): string | null => {
   }
   return null; // Não há tarefa anterior
 };
+
+// Helper para obter a chave do status de conclusão
+export const getCompletionStatusKey = (taskName: string) => {
+  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
+};

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath, getCompletionStatusKey } from '@/utils/dailyTasksSequence'; // Importar getCompletionStatusKey
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função

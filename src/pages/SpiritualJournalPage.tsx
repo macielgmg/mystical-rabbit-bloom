@@ -9,7 +9,7 @@ import { showError } from '@/utils/toast';
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
-import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
+import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath, getCompletionStatusKey } from '@/utils/dailyTasksSequence'; // Importar getCompletionStatusKey
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
@@ -18,11 +18,6 @@ const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
   "Buscando", "Conectado", "Próximo", "Completamente Abraçado"
 ];
-
-// Helper para obter a chave do status de conclusão
-const getCompletionStatusKey = (taskName: string) => {
-  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
-};
 
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
