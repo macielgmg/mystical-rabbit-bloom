@@ -19,7 +19,7 @@ export const achievementDefinitions: AchievementDefinition[] = [
     name: 'Iniciante Fiel',
     description: 'Conclua seu primeiro capítulo de estudo.',
     icon_name: 'Sparkles',
-    checkCondition: (data) => data.totalCompletedChapters > 1, // Alterado de >= 1 para > 1
+    checkCondition: (data) => data.totalCompletedChapters >= 1, // Alterado para >= 1
   },
   {
     name: 'Leitor Dedicado',

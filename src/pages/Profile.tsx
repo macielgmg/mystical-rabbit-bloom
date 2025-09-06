@@ -121,18 +121,18 @@ const Profile = () => {
     enabled: !!session?.user,
   });
 
-  // REMOVIDO: Efeito para verificar conquistas ao carregar a página de perfil
-  // useEffect(() => {
-  //   const checkAchievementsOnLoad = async () => {
-  //     if (session?.user && !loading) {
-  //       const newAchievements = await checkAndAwardAchievements(session.user.id);
-  //       newAchievements.forEach((ach, index) => {
-  //         setTimeout(() => showAchievementToast(ach), index * 700);
-  //       });
-  //     }
-  //   };
-  //   checkAchievementsOnLoad();
-  // }, [session, loading]);
+  // REATIVADO: Efeito para verificar conquistas ao carregar a página de perfil
+  useEffect(() => {
+    const checkAchievementsOnLoad = async () => {
+      if (session?.user && !loading) {
+        const newAchievements = await checkAndAwardAchievements(session.user.id);
+        newAchievements.forEach((ach, index) => {
+          setTimeout(() => showAchievementToast(ach), index * 700);
+        });
+      }
+    };
+    checkAchievementsOnLoad();
+  }, [session, loading]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
