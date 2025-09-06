@@ -254,7 +254,7 @@ const Today = () => {
       for (const [key, templateId] of Object.entries(templateTypes)) {
         if (templateId) {
           contentPromises.push(
-            (async () => { // Usar um IIFE async para await diretamente
+            (async () => {
               const { data, error } = await supabase.from('daily_content_templates')
                 .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
                 .eq('id', templateId)
@@ -262,27 +262,24 @@ const Today = () => {
 
               if (error) {
                 console.error(`Erro ao buscar template para ${key} (ID: ${templateId}):`, error);
-                return null;
+                contentMap[key as keyof DailyContentActual] = null;
+                return;
               }
+
               if (key === 'verse_of_the_day' && data) {
-                return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null } as VerseContent;
+                contentMap.verse_of_the_day = { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
+              } else if (key === 'daily_study' && data) {
+                contentMap.daily_study = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
+              } else if (key === 'quick_reflection' && data) {
+                contentMap.quick_reflection = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+              } else if (key === 'inspirational_quotes' && data) {
+                contentMap.inspirational_quotes = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
+              } else if (key === 'my_prayer' && data) {
+                contentMap.my_prayer = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+              } else {
+                contentMap[key as keyof DailyContentActual] = null;
               }
-              if (key === 'daily_study' && data) {
-                  return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null } as StudyContent;
-              }
-              if (key === 'quick_reflection' && data) {
-                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as ReflectionContent;
-              }
-              if (key === 'inspirational_quotes' && data) {
-                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null } as QuoteContent;
-              }
-              if (key === 'my_prayer' && data) {
-                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as PrayerContent;
-              }
-              return null; // Fallback
-            })().then(content => {
-              contentMap[key as keyof DailyContentActual] = content;
-            })
+            })()
           );
         } else {
           contentMap[key as keyof DailyContentActual] = null;
