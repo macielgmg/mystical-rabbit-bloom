@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Corrigido: '=>' para 'from'
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageSquare, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,7 +48,7 @@ const HelpAndSupportPage = () => {
             Falar com Suporte via WhatsApp
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            Horário de atendimento: Segunda a Sexta, das 9h às 18h.
+            Fique à vontade para mandar mensagem, iremos responder o mais rápido possível.
           </p>
         </CardContent>
       </Card>
