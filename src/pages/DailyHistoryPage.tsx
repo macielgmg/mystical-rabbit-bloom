@@ -241,7 +241,7 @@ const DailyHistoryPage = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold text-primary">Jornada em {formattedDate}</h1>
+        <h1 className="text-xl font-bold text-primary">{formattedDate}</h1> {/* Alterado aqui */}
       </header>
 
       {/* Indicador de Progresso Diário */}
