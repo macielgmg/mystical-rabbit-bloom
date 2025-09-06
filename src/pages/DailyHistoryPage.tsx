@@ -42,20 +42,12 @@ interface DailyContentForUser {
   content_date: string;
 }
 
-// Interfaces específicas para cada tipo de conteúdo
-interface VerseContent { text: string; reference: string; explanation: string | null; url_audio: string | null; }
-interface StudyContent { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null; }
-interface ReflectionContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
-interface QuoteContent { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null; }
-interface PrayerContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
-
-// Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
-  verse_of_the_day: VerseContent | null;
-  daily_study: StudyContent | null;
-  quick_reflection: ReflectionContent | null;
-  inspirational_quotes: QuoteContent | null;
-  my_prayer: PrayerContent | null;
+  verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
+  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
+  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null; // Adicionado explanation
+  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
 const DailyHistoryPage = () => {
@@ -111,10 +103,10 @@ const DailyHistoryPage = () => {
           if (templateId) {
             availableContentIds.push(field);
             templatePromises.push(
-              (supabase.from('daily_content_templates')
+              supabase.from('daily_content_templates')
                 .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
                 .eq('id', templateId)
-                .single() as unknown as Promise<any>) // Adicionado 'as unknown' aqui
+                .single()
                 .then(({ data, error }) => {
                   if (error) console.error(`Error fetching template for ${field}:`, error);
                   if (data) {
@@ -299,18 +291,18 @@ const DailyHistoryPage = () => {
                   {tab.id === 'verse_of_the_day' && tab.content && (
                     <>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as VerseContent).text}"
+                        "{tab.content.text}"
                       </p>
                       <p className="text-sm font-semibold text-muted-foreground mt-2">
-                        — {(tab.content as VerseContent).reference}
+                        — {tab.content.reference}
                       </p>
-                      {(tab.content as VerseContent).explanation && (
+                      {tab.content.explanation && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as VerseContent).explanation}
+                          {tab.content.explanation}
                         </p>
                       )}
-                      {(tab.content as VerseContent).url_audio && (isPro ? (
-                        <AudioPlayer src={(tab.content as VerseContent).url_audio!} className="mt-4" />
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
                         <ProAudioPlaceholder className="mt-4" />
                       ))}
@@ -318,26 +310,26 @@ const DailyHistoryPage = () => {
                   )}
                   {tab.id === 'daily_study' && tab.content && (
                     <>
-                      <h3 className="text-xl font-bold text-primary/90 mb-2">{(tab.content as StudyContent).title}</h3>
+                      <h3 className="text-xl font-bold text-primary/90 mb-2">{tab.content.title}</h3>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as StudyContent).text}"
+                        "{tab.content.text}"
                       </p>
-                      {(tab.content as StudyContent).auxiliar_text && (
+                      {tab.content.auxiliar_text && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as StudyContent).auxiliar_text}
+                          {tab.content.auxiliar_text}
                         </p>
                       )}
-                      {(tab.content as StudyContent).tags && (tab.content as StudyContent).tags!.length > 0 && (
+                      {tab.content.tags && tab.content.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-4">
-                          {(tab.content as StudyContent).tags!.map((tag, index) => (
+                          {tab.content.tags.map((tag, index) => (
                             <Badge key={index} variant="secondary" className="bg-white/50 text-gray-700 border-none px-2 py-0.5 text-xs font-medium">
                               {tag.toUpperCase()}
                             </Badge>
                           ))}
                         </div>
                       )}
-                      {(tab.content as StudyContent).url_audio && (isPro ? (
-                        <AudioPlayer src={(tab.content as StudyContent).url_audio!} className="mt-4" />
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
                         <ProAudioPlaceholder className="mt-4" />
                       ))}
@@ -346,15 +338,15 @@ const DailyHistoryPage = () => {
                   {tab.id === 'quick_reflection' && tab.content && (
                     <>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as ReflectionContent).text}"
+                        "{tab.content.text}"
                       </p>
-                      {(tab.content as ReflectionContent).auxiliar_text && (
+                      {tab.content.auxiliar_text && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as ReflectionContent).auxiliar_text}
+                          {tab.content.auxiliar_text}
                         </p>
                       )}
-                      {(tab.content as ReflectionContent).url_audio && (isPro ? (
-                        <AudioPlayer src={(tab.content as ReflectionContent).url_audio!} className="mt-4" />
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
                         <ProAudioPlaceholder className="mt-4" />
                       ))}
@@ -363,20 +355,20 @@ const DailyHistoryPage = () => {
                   {tab.id === 'inspirational_quotes' && tab.content && (
                     <>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as QuoteContent).text}"
+                        "{tab.content.text}"
                       </p>
-                      {(tab.content as QuoteContent).auxiliar_text && ( // Adicionado: Exibir auxiliar_text
+                      {tab.content.auxiliar_text && ( // Adicionado: Exibir auxiliar_text
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as QuoteContent).auxiliar_text}
+                          {tab.content.auxiliar_text}
                         </p>
                       )}
-                      {(tab.content as QuoteContent).explanation && ( // Adicionado: Exibir explanation
+                      {tab.content.explanation && ( // Adicionado: Exibir explanation
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as QuoteContent).explanation}
+                          {tab.content.explanation}
                         </p>
                       )}
-                      {(tab.content as QuoteContent).url_audio && (isPro ? (
-                        <AudioPlayer src={(tab.content as QuoteContent).url_audio!} className="mt-4" />
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
                         <ProAudioPlaceholder className="mt-4" />
                       ))}
@@ -385,15 +377,15 @@ const DailyHistoryPage = () => {
                   {tab.id === 'my_prayer' && tab.content && (
                     <>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as PrayerContent).text}"
+                        "{tab.content.text}"
                       </p>
-                      {(tab.content as PrayerContent).auxiliar_text && (
+                      {tab.content.auxiliar_text && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          {(tab.content as PrayerContent).auxiliar_text}
+                          {tab.content.auxiliar_text}
                         </p>
                       )}
-                      {(tab.content as PrayerContent).url_audio && (isPro ? (
-                        <AudioPlayer src={(tab.content as PrayerContent).url_audio!} className="mt-4" />
+                      {tab.content.url_audio && (isPro ? (
+                        <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
                         <ProAudioPlaceholder className="mt-4" />
                       ))}

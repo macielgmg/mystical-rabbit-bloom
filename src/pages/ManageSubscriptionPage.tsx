@@ -16,7 +16,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger, // Importado AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 

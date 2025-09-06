@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/contexts/SessionContext';
 import { ArrowLeft, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
-import { showError, showAchievementToast, showSuccess } from '@/utils/toast'; // Importado showSuccess
+import { showError, showAchievementToast } from '@/utils/toast';
 import { checkAndAwardAchievements } from '@/utils/achievements';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -143,7 +143,7 @@ const ChapterDetail = () => {
       // 3. Fetch all chapters for the study to determine navigation and total count
       const { data: allChaptersData, error: allChaptersError } = await supabase
         .from('chapters')
-        .select('id, study_id, chapter_number, title') // Incluído study_id
+        .select('id, chapter_number, title')
         .eq('study_id', studyId)
         .order('chapter_number', { ascending: true });
 

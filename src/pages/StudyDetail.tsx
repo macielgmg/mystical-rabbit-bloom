@@ -14,7 +14,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger, // Importado AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import {
   Pagination,
@@ -26,7 +25,6 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { cn } from '@/lib/utils';
-import { showError } from '@/utils/toast'; // Importado showError
 
 interface ChapterFromDB {
   id: string;
@@ -94,7 +92,7 @@ const StudyDetail = () => {
         // 2. Fetch all chapters for this study from the database
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
-          .select('id, study_id, chapter_number, title') // Incluído chapter_number e title
+          .select('*')
           .eq('study_id', studyId)
           .order('chapter_number', { ascending: true });
 
@@ -324,12 +322,12 @@ const StudyDetail = () => {
 
           {totalPages > 1 && (
             <Pagination className="mt-8">
-              <PaginationContent className="flex flex-wrap justify-center gap-1">
-                <PaginationItem className="flex-1 sm:flex-none">
+              <PaginationContent>
+                <PaginationItem>
                   <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>Anterior</PaginationPrevious>
                 </PaginationItem>
                 {renderPaginationItems()}
-                <PaginationItem className="flex-1 sm:flex-none">
+                <PaginationItem>
                   <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>Próximo</PaginationNext>
                 </PaginationItem>
               </PaginationContent>
