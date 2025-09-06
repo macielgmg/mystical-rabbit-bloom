@@ -99,7 +99,7 @@ export const localStudies: LocalStudyMetadata[] = [
         title: 'Salmo 15: O Cidadão do Reino de Deus',
       },
       {
-        id: '6a7b8c9d-0e1f-4234-d567-89012345678g', // NOVO ID para Salmo 16
+        id: '6a7b8c9d-0e1f-4234-8567-890123456789', // ID CORRIGIDO para Salmo 16
         chapter_number: 16,
         title: 'Salmo 16: O Senhor é Minha Porção',
       },
