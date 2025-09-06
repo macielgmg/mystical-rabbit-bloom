@@ -18,11 +18,12 @@ interface SessionContextType {
   currentBillingPeriodStart: string | null;
   proAccessEndAt: string | null; // Novo campo
   paymentStatus: string | null; // Novo campo
+  enablePopups: boolean; // Novo campo para controlar pop-ups
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionProvider = ({ children }: { children: ReactNode }) => {
+export const SessionProvider = ({ children }: { ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPro, setIsPro] = useState(false); // Indica se o usuário TEM acesso PRO no momento
@@ -36,6 +37,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [currentBillingPeriodStart, setCurrentBillingPeriodStart] = useState<string | null>(null);
   const [proAccessEndAt, setProAccessEndAt] = useState<string | null>(null); // Novo estado
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null); // Novo estado
+  const [enablePopups, setEnablePopups] = useState(true); // Novo estado, padrão TRUE
 
   const fetchProfile = useCallback(async (user: User | null) => {
     if (!user) {
@@ -50,13 +52,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBillingPeriodStart(null);
       setProAccessEndAt(null);
       setPaymentStatus(null);
+      setEnablePopups(true); // Resetar para padrão
       return;
     }
 
     console.log('fetchProfile: Fetching profile for user ID:', user.id);
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('is_pro, first_name, last_name, avatar_url, onboarding_completed, quiz_responses, preferences, daily_verse_notifications, study_reminders, achievement_notifications, recurrence, current_billing_period_start, pro_access_end_at, payment_status') // Adicionado pro_access_end_at e payment_status
+      .select('is_pro, first_name, last_name, avatar_url, onboarding_completed, quiz_responses, preferences, daily_verse_notifications, study_reminders, achievement_notifications, recurrence, current_billing_period_start, pro_access_end_at, payment_status, enable_popups') // Adicionado pro_access_end_at, payment_status e enable_popups
       .eq('id', user.id)
       .single();
 
@@ -72,6 +75,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBillingPeriodStart(null);
       setProAccessEndAt(null);
       setPaymentStatus(null);
+      setEnablePopups(true); // Resetar para padrão em caso de erro
     } else if (profile) {
       console.log('fetchProfile: Profile data received:', profile);
       
@@ -94,6 +98,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBillingPeriodStart(profile.current_billing_period_start || null);
       setProAccessEndAt(profile.pro_access_end_at || null); // Definir novo estado
       setPaymentStatus(profile.payment_status || null); // Definir novo estado
+      setEnablePopups(profile.enable_popups ?? true); // Definir novo estado, padrão TRUE
       console.log('fetchProfile: Set onboardingCompleted to:', profile.onboarding_completed ?? false);
     } else {
       console.log('fetchProfile: Profile not found for user ID:', user.id, 'Using user_metadata for name.');
@@ -107,6 +112,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBillingPeriodStart(null);
       setProAccessEndAt(null);
       setPaymentStatus(null);
+      setEnablePopups(true); // Padrão TRUE se perfil não encontrado
       console.log('fetchProfile: Set onboardingCompleted to false (profile not found).');
     }
   }, []);
@@ -210,6 +216,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       currentBillingPeriodStart,
       proAccessEndAt, // Adicionado
       paymentStatus, // Adicionado
+      enablePopups, // Adicionado
     }}>
       {children}
     </SessionContext.Provider>

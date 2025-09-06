@@ -1,6 +1,5 @@
 import React from "react"; // Adicionado explicitamente
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -33,6 +32,7 @@ import AboutAppPage from "./pages/AboutAppPage";
 import AccountSecurityPage from "./pages/AccountSecurityPage";
 import DailyHistoryPage from "./pages/DailyHistoryPage";
 import HelpAndSupportPage from "./pages/HelpAndSupportPage"; // Import HelpAndSupportPage
+import { ConditionalSonnerToaster } from "./components/ConditionalSonnerToaster"; // Importar o novo componente
 
 
 const queryClient = new QueryClient();
@@ -45,7 +45,7 @@ const App = () => (
           <Toaster />
           <BrowserRouter> {/* BrowserRouter agora envolve SessionProvider e Sonner */}
             <SessionProvider>
-              <Sonner /> {/* Movido para dentro do BrowserRouter */}
+              <ConditionalSonnerToaster /> {/* Usando o novo componente aqui */}
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
