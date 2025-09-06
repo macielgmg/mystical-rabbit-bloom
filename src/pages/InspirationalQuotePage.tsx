@@ -117,8 +117,7 @@ const InspirationalQuotePage = () => {
 
     // Increment total_shares in profiles table
     const { error: updateError } = await supabase
-      .from('profiles')
-      .rpc('increment_total_shares', { user_id: session.user.id }); // Usar RPC para incrementar
+      .rpc('increment_total_shares', { user_id: session.user.id }); // CORRIGIDO: Chamada direta a supabase.rpc
 
     if (updateError) {
       console.error("Erro ao incrementar total_shares:", updateError);
@@ -306,7 +305,7 @@ const InspirationalQuotePage = () => {
         <AudioPlayer src={quoteContent.url_audio} className="mb-4" />
       ) : (
         <ProAudioPlaceholder className="mb-4" />
-      ))}
+        ))}
 
       <div className="flex justify-between items-center py-4 gap-2 flex-shrink-0">
         {/* Share Button */}

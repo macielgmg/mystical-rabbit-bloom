@@ -116,8 +116,7 @@ const MyPrayerPage = () => {
 
     // Increment total_shares in profiles table
     const { error: updateError } = await supabase
-      .from('profiles')
-      .rpc('increment_total_shares', { user_id: session.user.id }); // Usar RPC para incrementar
+      .rpc('increment_total_shares', { user_id: session.user.id }); // CORRIGIDO: Chamada direta a supabase.rpc
 
     if (updateError) {
       console.error("Erro ao incrementar total_shares:", updateError);

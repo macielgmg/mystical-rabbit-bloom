@@ -104,8 +104,7 @@ const SpiritualJournalPage = () => {
 
       // Increment total_journal_entries in profiles table
       const { error: updateProfileError } = await supabase
-        .from('profiles')
-        .rpc('increment_total_journal_entries', { user_id: userId }); // Usar RPC para incrementar
+        .rpc('increment_total_journal_entries', { user_id: userId }); // CORRIGIDO: Chamada direta a supabase.rpc
 
       if (updateProfileError) {
         console.error("Erro ao incrementar total_journal_entries:", updateProfileError);
