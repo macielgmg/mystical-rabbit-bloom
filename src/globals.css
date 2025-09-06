@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 95 20% 35%; /* Verde escuro para textos e elementos principais */
+    --primary: 95 20% 36%; /* Verde escuro para textos e elementos principais, ajustado para a cor da imagem */
     --primary-foreground: 60 90% 98%; /* Bege bem claro para texto sobre o verde */
 
     --secondary: 60 30% 90%; /* Bege claro para fundos secundários */
