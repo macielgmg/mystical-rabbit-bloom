@@ -5,7 +5,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, Sparkles, BookOpen, GraduationCap, Crown, Flame, TrendingUp, Award, Target, Icon as LucideIcon, ListChecks } from "lucide-react"; // Adicionado ListChecks
+import { ArrowLeft, Loader2, Sparkles, BookOpen, GraduationCap, Crown, Flame, TrendingUp, Award, Target, Icon as LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Drawer,
@@ -17,7 +17,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { AchievementProgressDrawer } from '@/components/AchievementProgressDrawer'; // Importar o novo componente
 
 // --- Shared components and types ---
 
@@ -30,8 +29,6 @@ const iconComponents: { [key: string]: typeof LucideIcon } = {
   TrendingUp,
   Award,
   Target, // Fallback
-  Share2: Sparkles, // Adicionado para evitar erro de tipo, mas o ícone real será usado no drawer
-  MessageSquare: Sparkles, // Adicionado para evitar erro de tipo
 };
 
 interface Achievement {
@@ -98,8 +95,6 @@ const AchievementsPage = () => {
   const [unlockedAchievementIds, setUnlockedAchievementIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [highlightedAchievementId, setHighlightedAchievementId] = useState<string | null>(null); // Estado para a conquista a ser destacada
-  const [showProgressDrawer, setShowProgressDrawer] = useState(false); // Estado para controlar o Drawer de progresso
-  const [conditionData, setConditionData] = useState<any>(null); // Estado para armazenar os dados de condição
 
   const achievementRefs = useRef<Map<string, HTMLDivElement | null>>(new Map()); // Mapa para armazenar referências aos cards
 
@@ -120,21 +115,18 @@ const AchievementsPage = () => {
       }
       setLoading(true);
 
-      const [allAchievementsPromise, unlockedAchievementsPromise, profileDataPromise] = [
+      const [allAchievementsPromise, unlockedAchievementsPromise] = [
         supabase.from('achievements').select('*'),
-        supabase.from('user_achievements').select('achievement_id').eq('user_id', session.user.id),
-        supabase.from('profiles').select('streak_count, is_pro, total_shares, total_journal_entries').eq('id', session.user.id).single(),
+        supabase.from('user_achievements').select('achievement_id').eq('user_id', session.user.id)
       ];
 
       const [
         { data: allAchievementsData, error: allAchievementsError },
-        { data: unlockedAchievementsData, error: unlockedAchievementsError },
-        { data: profileData, error: profileError },
-      ] = await Promise.all([allAchievementsPromise, unlockedAchievementsPromise, profileDataPromise]);
+        { data: unlockedAchievementsData, error: unlockedAchievementsError }
+      ] = await Promise.all([allAchievementsPromise, unlockedAchievementsPromise]);
 
       if (allAchievementsError) console.error("Erro ao buscar todas as conquistas:", allAchievementsError);
       if (unlockedAchievementsError) console.error("Erro ao buscar conquistas do usuário:", unlockedAchievementsError);
-      if (profileError && profileError.code !== 'PGRST116') console.error("Erro ao buscar dados do perfil:", profileError);
 
       if (allAchievementsData) {
         setAllAchievements(allAchievementsData);
@@ -142,20 +134,6 @@ const AchievementsPage = () => {
       if (unlockedAchievementsData) {
         setUnlockedAchievementIds(new Set(unlockedAchievementsData.map(a => a.achievement_id)));
       }
-
-      // Para o conditionData, precisamos de mais dados do que apenas o perfil
-      // Reutilizamos a lógica de checkAndAwardAchievements para obter o conditionData completo
-      const { conditionData: fetchedConditionData } = await (async () => {
-        try {
-          // Chamar checkAndAwardAchievements para obter o conditionData completo
-          const result = await (await import('@/utils/achievements')).checkAndAwardAchievements(session.user.id);
-          return result;
-        } catch (e) {
-          console.error("Erro ao buscar conditionData:", e);
-          return { newAchievements: [], conditionData: null };
-        }
-      })();
-      setConditionData(fetchedConditionData);
 
       setLoading(false);
     };
@@ -179,7 +157,7 @@ const AchievementsPage = () => {
   const unlockedAchievements = allAchievements.filter(ach => unlockedAchievementIds.has(ach.id));
 
   return (
-    <div className="container mx-auto max-w-2xl pb-8">
+    <div className="container mx-auto max-w-2xl">
       <header className="relative flex items-center justify-center py-4 mb-4">
         <Button 
           variant="ghost" 
@@ -197,71 +175,49 @@ const AchievementsPage = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <>
-          <Tabs defaultValue="unlocked" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="unlocked">Desbloqueadas ({unlockedAchievements.length})</TabsTrigger>
-              <TabsTrigger value="all">Todas ({allAchievements.length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="unlocked">
-              {unlockedAchievements.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 pt-4">
-                  {unlockedAchievements.map((ach) => (
-                    <AchievementCard 
-                      key={ach.id} 
-                      title={ach.name} 
-                      description={ach.description}
-                      iconName={ach.icon_name}
-                      isUnlocked={true} 
-                      isHighlighted={highlightedAchievementId === ach.id}
-                      ref={node => achievementRefs.current.set(ach.id, node)} // Atribuir ref
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 border-2 border-dashed rounded-lg mt-4">
-                  <h2 className="text-xl font-semibold text-primary">Nenhuma conquista desbloqueada</h2>
-                  <p className="text-muted-foreground mt-2">Continue seus estudos para ganhar conquistas!</p>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="all">
+        <Tabs defaultValue="unlocked" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="unlocked">Desbloqueadas ({unlockedAchievements.length})</TabsTrigger>
+            <TabsTrigger value="all">Todas ({allAchievements.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="unlocked">
+            {unlockedAchievements.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 pt-4">
-                {allAchievements.map((ach) => (
+                {unlockedAchievements.map((ach) => (
                   <AchievementCard 
                     key={ach.id} 
                     title={ach.name} 
                     description={ach.description}
                     iconName={ach.icon_name}
-                    isUnlocked={unlockedAchievementIds.has(ach.id)} 
+                    isUnlocked={true} 
                     isHighlighted={highlightedAchievementId === ach.id}
                     ref={node => achievementRefs.current.set(ach.id, node)} // Atribuir ref
                   />
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Botão para visualizar o progresso das conquistas */}
-          <Button 
-            onClick={() => setShowProgressDrawer(true)} 
-            className="w-full mt-8 py-6 text-lg"
-            disabled={!conditionData}
-          >
-            <ListChecks className="h-5 w-5 mr-2" /> Visualizar Progresso das Conquistas
-          </Button>
-
-          {/* Drawer de Progresso das Conquistas */}
-          {conditionData && (
-            <AchievementProgressDrawer
-              isOpen={showProgressDrawer}
-              onClose={() => setShowProgressDrawer(false)}
-              userAchievements={allAchievements}
-              unlockedAchievementIds={unlockedAchievementIds}
-              conditionData={conditionData}
-            />
-          )}
-        </>
+            ) : (
+              <div className="text-center py-16 border-2 border-dashed rounded-lg mt-4">
+                <h2 className="text-xl font-semibold text-primary">Nenhuma conquista desbloqueada</h2>
+                <p className="text-muted-foreground mt-2">Continue seus estudos para ganhar conquistas!</p>
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="all">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 pt-4">
+              {allAchievements.map((ach) => (
+                <AchievementCard 
+                  key={ach.id} 
+                  title={ach.name} 
+                  description={ach.description}
+                  iconName={ach.icon_name}
+                  isUnlocked={unlockedAchievementIds.has(ach.id)} 
+                  isHighlighted={highlightedAchievementId === ach.id}
+                  ref={node => achievementRefs.current.set(ach.id, node)} // Atribuir ref
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
