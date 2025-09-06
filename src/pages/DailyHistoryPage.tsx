@@ -46,7 +46,7 @@ interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
   daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
   quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Adicionado auxiliar_text
+  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null; // Adicionado explanation
   my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
@@ -116,8 +116,8 @@ const DailyHistoryPage = () => {
                       contentMap[field] = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
                     } else if (field === 'quick_reflection') {
                       contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                    } else if (field === 'inspirational_quotes') { // Adicionado auxiliar_text para inspirational_quotes
-                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    } else if (field === 'inspirational_quotes') { // Adicionado auxiliar_text e explanation para inspirational_quotes
+                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
                     } else if (field === 'my_prayer') {
                       contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                     }
@@ -360,6 +360,11 @@ const DailyHistoryPage = () => {
                       {tab.content.auxiliar_text && ( // Adicionado: Exibir auxiliar_text
                         <p className="text-sm text-muted-foreground mt-2">
                           {tab.content.auxiliar_text}
+                        </p>
+                      )}
+                      {tab.content.explanation && ( // Adicionado: Exibir explanation
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.explanation}
                         </p>
                       )}
                       {tab.content.url_audio && (isPro ? (

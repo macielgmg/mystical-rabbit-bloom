@@ -34,7 +34,7 @@ interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
   daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
   quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Adicionado auxiliar_text
+  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null; // Adicionado explanation
   my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
@@ -163,7 +163,7 @@ const Today = () => {
         verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null, url_audio: null },
         daily_study: { text: "Erro ao carregar estudo diário.", title: null, auxiliar_text: null, tags: null, url_audio: null },
         quick_reflection: { text: "Erro ao carregar reflexão.", auxiliar_text: null, url_audio: null },
-        inspirational_quotes: { text: "Erro ao carregar citação.", auxiliar_text: null, url_audio: null }, // Adicionado auxiliar_text
+        inspirational_quotes: { text: "Erro ao carregar citação.", auxiliar_text: null, explanation: null, url_audio: null }, // Adicionado explanation
         my_prayer: { text: "Erro ao carregar oração.", auxiliar_text: null, url_audio: null },
       });
       setLoadingDailyContent(false);
@@ -222,7 +222,7 @@ const Today = () => {
           verse_of_the_day: { text: "Erro ao carregar versículo do dia.", reference: "Erro", explanation: null, url_audio: null },
           daily_study: { text: "Erro ao carregar estudo diário.", title: null, auxiliar_text: null, tags: null, url_audio: null },
           quick_reflection: { text: "Erro ao carregar reflexão.", auxiliar_text: null, url_audio: null },
-          inspirational_quotes: { text: "Erro ao carregar citação.", auxiliar_text: null, url_audio: null }, // Adicionado auxiliar_text
+          inspirational_quotes: { text: "Erro ao carregar citação.", auxiliar_text: null, explanation: null, url_audio: null }, // Adicionado explanation
           my_prayer: { text: "Erro ao carregar oração.", auxiliar_text: null, url_audio: null },
         });
         setLoadingDailyContent(false);
@@ -264,8 +264,8 @@ const Today = () => {
                 if (key === 'quick_reflection' && data) {
                     return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                 }
-                if (key === 'inspirational_quotes' && data) { // Adicionado auxiliar_text para inspirational_quotes
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                if (key === 'inspirational_quotes' && data) { // Adicionado auxiliar_text e explanation para inspirational_quotes
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
                 }
                 if (key === 'my_prayer' && data) {
                     return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };

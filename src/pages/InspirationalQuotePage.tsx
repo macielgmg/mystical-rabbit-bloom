@@ -19,7 +19,7 @@ const InspirationalQuotePage = () => {
   const navigate = useNavigate();
   const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null); // Adicionado auxiliar_text
+  const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null>(null); // Adicionado explanation
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const InspirationalQuotePage = () => {
       if (quoteTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, auxiliar_text, url_audio') // Adicionado auxiliar_text
+          .select('text_content, auxiliar_text, explanation, url_audio') // Adicionado explanation
           .eq('id', quoteTemplateId)
           .single();
 
@@ -88,7 +88,12 @@ const InspirationalQuotePage = () => {
           showError("Erro ao carregar o conteúdo da citação.");
           setQuoteContent(null);
         } else if (templateData) {
-          setQuoteContent({ text: templateData.text_content, auxiliar_text: templateData.auxiliar_text || null, url_audio: templateData.url_audio || null });
+          setQuoteContent({ 
+            text: templateData.text_content, 
+            auxiliar_text: templateData.auxiliar_text || null, 
+            explanation: templateData.explanation || null, // Definir explanation
+            url_audio: templateData.url_audio || null 
+          });
         } else {
           setQuoteContent(null);
         }
@@ -102,7 +107,15 @@ const InspirationalQuotePage = () => {
 
   const handleShare = () => {
     if (navigator.share && quoteContent?.text) {
-      const shareText = `Citação Inspiradora: "${quoteContent.text}"\n\n${quoteContent.auxiliar_text ? `Para Refletir: ${quoteContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
+      let shareText = `Citação Inspiradora: "${quoteContent.text}"\n\n`;
+      if (quoteContent.auxiliar_text) {
+        shareText += `Para Refletir: ${quoteContent.auxiliar_text}\n\n`;
+      }
+      if (quoteContent.explanation) {
+        shareText += `Explicação: ${quoteContent.explanation}\n\n`;
+      }
+      shareText += `Confira o app Raízes da Fé!`;
+
       navigator.share({
         title: 'Citação Inspiradora - Raízes da Fé',
         text: shareText,
@@ -111,7 +124,15 @@ const InspirationalQuotePage = () => {
       .then(() => showSuccess('Citação compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Citação Inspiradora: "${quoteContent?.text || ''}"\n\n${quoteContent?.auxiliar_text ? `Para Refletir: ${quoteContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      let shareText = `Citação Inspiradora: "${quoteContent?.text || ''}"\n\n`;
+      if (quoteContent?.auxiliar_text) {
+        shareText += `Para Refletir: ${quoteContent.auxiliar_text}\n\n`;
+      }
+      if (quoteContent?.explanation) {
+        shareText += `Explicação: ${quoteContent.explanation}\n\n`;
+      }
+      shareText += `Confira o app Raízes da Fé: ${window.location.href}`;
+
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Citação copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a citação.'));
@@ -208,11 +229,19 @@ const InspirationalQuotePage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{quoteContent.text}"
               </p>
-              {quoteContent.auxiliar_text && ( // Adicionado: Seção "Para Refletir"
+              {quoteContent.auxiliar_text && ( // Seção "Para Refletir"
                 <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
                   <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">
                     {quoteContent.auxiliar_text}
+                  </p>
+                </div>
+              )}
+              {quoteContent.explanation && ( // Nova Seção "Explicação"
+                <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
+                  <h3 className="text-xl font-bold text-primary/90 mb-2">Explicação</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {quoteContent.explanation}
                   </p>
                 </div>
               )}
