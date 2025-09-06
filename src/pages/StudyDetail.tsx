@@ -283,11 +283,11 @@ const StudyDetail = () => {
             <Pagination className="mt-8">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
+                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>Anterior</PaginationPrevious>
                 </PaginationItem>
                 {renderPaginationItems()}
                 <PaginationItem>
-                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
+                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>Próximo</PaginationNext>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
