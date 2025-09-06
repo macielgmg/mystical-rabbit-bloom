@@ -14,6 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger, // Importado AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import {
   Pagination,
@@ -25,6 +26,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { cn } from '@/lib/utils';
+import { showError } from '@/utils/toast'; // Importado showError
 
 interface ChapterFromDB {
   id: string;
@@ -92,7 +94,7 @@ const StudyDetail = () => {
         // 2. Fetch all chapters for this study from the database
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
-          .select('*')
+          .select('id, study_id, chapter_number, title') // Incluído chapter_number e title
           .eq('study_id', studyId)
           .order('chapter_number', { ascending: true });
 

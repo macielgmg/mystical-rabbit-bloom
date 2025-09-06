@@ -20,7 +20,7 @@ const fetchTaskStatus = async (userId: string, taskName: string) => {
     // PGRST116 means "no rows found"
     // 406 (Not Acceptable) can sometimes be returned by PostgREST when .single() finds no matching row after RLS.
     // We treat both as the task not being completed for the current day.
-    if (error.code === 'PGRST116' || error.status === 406) {
+    if (error.code === 'PGRST116' || error.code === '406') { // Corrigido: error.status para error.code
       return false;
     }
     throw error; // Re-throw other errors

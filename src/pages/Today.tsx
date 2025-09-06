@@ -32,13 +32,20 @@ interface DailyContentTemplateIds {
   content_date: string; // Adicionado para buscar todas as datas
 }
 
+// Interfaces específicas para cada tipo de conteúdo
+interface VerseContent { text: string; reference: string; explanation: string | null; url_audio: string | null; }
+interface StudyContent { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null; }
+interface ReflectionContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
+interface QuoteContent { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null; }
+interface PrayerContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
+
 // Tipagem para o conteúdo real (texto) a ser exibido
 interface DailyContentActual {
-  verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
-  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
-  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null; // Adicionado explanation
-  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  verse_of_the_day: VerseContent | null;
+  daily_study: StudyContent | null;
+  quick_reflection: ReflectionContent | null;
+  inspirational_quotes: QuoteContent | null;
+  my_prayer: PrayerContent | null;
 }
 
 interface DailyContentTemplate {
@@ -259,28 +266,29 @@ const Today = () => {
                   return null;
                 }
                 if (key === 'verse_of_the_day' && data) {
-                  return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
+                  return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null } as VerseContent;
                 }
                 if (key === 'daily_study' && data) {
-                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null } as StudyContent;
                 }
                 if (key === 'quick_reflection' && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as ReflectionContent;
                 }
                 if (key === 'inspirational_quotes' && data) { // Adicionado auxiliar_text e explanation para inspirational_quotes
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null } as QuoteContent;
                 }
                 if (key === 'my_prayer' && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as PrayerContent;
                 }
                 return null; // Fallback
               })
               .then(content => {
-                contentMap[key as keyof DailyContentActual] = content;
+                // Usar asserção de tipo para o key e o content
+                (contentMap as any)[key] = content;
               })
           );
         } else {
-          contentMap[key as keyof DailyContentActual] = null;
+          (contentMap as any)[key] = null;
         }
       }
 

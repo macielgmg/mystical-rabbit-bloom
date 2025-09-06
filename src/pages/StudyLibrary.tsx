@@ -82,7 +82,7 @@ const StudyLibrary = () => {
         // 2. Fetch all chapters for all studies
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
-          .select('id, study_id');
+          .select('id, study_id, chapter_number, title'); // Incluído chapter_number e title
 
         if (chaptersError) throw chaptersError;
 
