@@ -116,7 +116,7 @@ const DailyStudyPage = () => {
 
   const handleShare = () => {
     if (navigator.share && studyContent) {
-      const shareText = `Estudo Diário: ${studyContent.title || 'Sem Título'}\n\n"${studyContent.text}"\n\n${studyContent.auxiliar_text ? `Para Refletir: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
+      const shareText = `Estudo Diário: ${studyContent.title || 'Sem Título'}\n\n"${studyContent.text}"\n\n${studyContent.auxiliar_text ? `Explicação: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Estudo Diário - Raízes da Fé',
         text: shareText,
@@ -125,7 +125,7 @@ const DailyStudyPage = () => {
       .then(() => showSuccess('Estudo compartilhado com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.auxiliar_text ? `Reflexion: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Estudo Diário: ${studyContent?.title || 'Sem Título'}\n\n"${studyContent?.text || ''}"\n\n${studyContent?.auxiliar_text ? `Explicação: ${studyContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Estudo copiado para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar o estudo.'));
@@ -288,7 +288,7 @@ const DailyStudyPage = () => {
                 </p>
                 {studyContent.auxiliar_text && (
                   <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
-                    <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
+                    <h3 className="text-xl font-bold text-primary/90 mb-2">Explicação</h3> {/* Alterado aqui */}
                     <p className="text-base text-muted-foreground leading-relaxed">
                       {studyContent.auxiliar_text}
                     </p>
