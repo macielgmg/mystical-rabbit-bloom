@@ -32,10 +32,11 @@ export const showAchievementToast = (achievement: Achievement) => {
 
 interface StudyAcquired {
   title: string;
+  studyId: string; // Adicionado studyId
 }
 
 export const showStudyAcquiredToast = (study: StudyAcquired) => {
   toast.custom(() => (
-    <StudyAcquiredToast title={study.title} />
+    <StudyAcquiredToast title={study.title} studyId={study.studyId} />
   ), { duration: 5000 });
 };

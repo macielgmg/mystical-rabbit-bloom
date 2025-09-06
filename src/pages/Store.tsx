@@ -128,7 +128,7 @@ const Store = () => {
         return;
       }
 
-      showStudyAcquiredToast({ title: studyTitle });
+      showStudyAcquiredToast({ title: studyTitle, studyId: studyId }); // Passa studyId aqui
       setNewStudyNotification(true); // Ativa a notificação na aba "Estudos"
       
       // Atualiza o estado local para refletir que o estudo foi adquirido

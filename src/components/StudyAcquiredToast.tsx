@@ -1,14 +1,25 @@
 "use client";
 
 import { BookOpenCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 
 interface StudyAcquiredToastProps {
   title: string;
+  studyId: string; // Adicionado studyId para redirecionamento
 }
 
-export const StudyAcquiredToast = ({ title }: StudyAcquiredToastProps) => {
+export const StudyAcquiredToast = ({ title, studyId }: StudyAcquiredToastProps) => {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/study/${studyId}`);
+  };
+
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-card border border-primary/20 w-full max-w-sm relative overflow-hidden">
+    <div 
+      className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-card border border-primary/20 w-full max-w-sm relative overflow-hidden cursor-pointer"
+      onClick={handleClick} // Torna o toast clicável
+    >
       {/* Animação de brilho com CSS */}
       <style>
         {`

@@ -2,6 +2,7 @@
 
 import { Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; // Importar useNavigate
+import React, { useEffect, useRef } from 'react'; // Importar useEffect e useRef
 
 interface AchievementToastProps {
   id: string; // Adicionado ID para navegação
@@ -11,6 +12,14 @@ interface AchievementToastProps {
 
 export const AchievementToast = ({ id, name, description }: AchievementToastProps) => {
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement>(null); // Referência para o elemento de áudio
+
+  useEffect(() => {
+    // Toca o som quando o componente é montado
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.error("Erro ao tocar som de conquista:", e));
+    }
+  }, []);
 
   const handleClick = () => {
     navigate('/achievements', { state: { highlightAchievementId: id } });
@@ -21,6 +30,9 @@ export const AchievementToast = ({ id, name, description }: AchievementToastProp
       className="flex items-center gap-4 p-4 rounded-lg shadow-lg bg-card border border-primary/20 w-full max-w-sm relative overflow-hidden cursor-pointer"
       onClick={handleClick} // Adicionado o handler de clique
     >
+      {/* Elemento de áudio para o som de 'ding' */}
+      <audio ref={audioRef} src="/sounds/ding.mp3" preload="auto" />
+
       {/* Animação de brilho com CSS */}
       <style>
         {`
