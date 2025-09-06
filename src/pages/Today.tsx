@@ -17,6 +17,8 @@ import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
+import { checkAndAwardAchievements } from '@/utils/achievements'; // Importar a função de verificação de conquistas
+import { showAchievementToast } from '@/utils/toast'; // Importar o toast de conquista
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -300,6 +302,19 @@ const Today = () => {
   useEffect(() => {
     populateAndFetchDailyContent();
   }, [session, preferences, quizResponses]);
+
+  // NOVO useEffect para verificar conquistas ao carregar a página "Today"
+  useEffect(() => {
+    const checkAchievementsOnLoad = async () => {
+      if (session?.user && !loadingDailyContent && !isLoadingAnyDailyTask) {
+        const newAchievements = await checkAndAwardAchievements(session.user.id);
+        newAchievements.forEach((ach, index) => {
+          setTimeout(() => showAchievementToast(ach), index * 700);
+        });
+      }
+    };
+    checkAchievementsOnLoad();
+  }, [session, loadingDailyContent, isLoadingAnyDailyTask]); // Dependências para re-executar quando a sessão e o conteúdo diário estiverem carregados
 
   useEffect(() => {
     if (streakData && session?.user) {
