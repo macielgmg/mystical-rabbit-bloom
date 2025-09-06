@@ -317,18 +317,20 @@ const Store = () => {
                   <Button
                     onClick={() => handleAcquireStudy(item.id, item.title)}
                     className={cn(
-                      "w-full bg-primary hover:bg-primary/90" // Cor do botão de continuar
+                      "w-full bg-primary hover:bg-primary/90"
                     )}
                     disabled={acquiringStudyId === item.id || (!item.is_free && !isUserPro)}
                   >
                     {acquiringStudyId === item.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <Loader2 className="h-4 w-4 animate-spin mr-2 text-primary-foreground" />
                     ) : (
                       !item.is_free && !isUserPro ? (
-                        <>
-                          Assinar Pro <Star className="h-4 w-4 ml-2 fill-yellow-300 text-yellow-300" /> {/* Estrela amarela */}
-                        </>
-                      ) : "Adquirir"
+                        <span className="flex items-center justify-center text-primary-foreground">
+                          Assinar Pro <Star className="h-4 w-4 ml-2 fill-yellow-300 text-yellow-300" />
+                        </span>
+                      ) : (
+                        <span className="text-primary-foreground">Adquirir</span>
+                      )
                     )}
                   </Button>
                 )}
