@@ -1,12 +1,18 @@
 "use client";
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, HelpCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, HelpCircle, HeartHandshake, Star, Crown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
-const WHATSAPP_NUMBER = "5531936182392"; // Número de WhatsApp atualizado
+const WHATSAPP_NUMBER = "5531936182392";
 const WHATSAPP_MESSAGE = "Olá! Preciso de ajuda com o aplicativo Raízes da Fé.";
 
 const HelpAndSupportPage = () => {
@@ -31,27 +37,89 @@ const HelpAndSupportPage = () => {
         <h1 className="text-xl font-bold text-primary">Ajuda e Suporte</h1>
       </header>
 
-      <Card className="p-6 space-y-4 text-center">
-        <CardHeader className="p-0 pb-2">
-          <HelpCircle className="h-16 w-16 text-primary mx-auto mb-4" />
-          <CardTitle className="text-2xl font-bold text-primary">Precisa de Ajuda?</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 space-y-4">
-          <p className="text-lg text-muted-foreground">
-            Nossa equipe de suporte está pronta para te ajudar! Entre em contato conosco via WhatsApp para um atendimento rápido.
-          </p>
-          <Button 
-            onClick={handleWhatsappClick} 
-            className="w-full py-6 text-lg bg-green-600 hover:bg-green-700 text-white"
-          >
-            <MessageSquare className="h-6 w-6 mr-3" />
-            Falar com Suporte via WhatsApp
-          </Button>
-          <p className="text-sm text-muted-foreground mt-4">
-            Fique à vontade para mandar mensagem, iremos responder o mais rápido possível.
-          </p>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="help" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-4">
+          <TabsTrigger value="help" className="flex items-center gap-2 text-base py-2">
+            <HelpCircle className="h-5 w-5" /> Ajuda
+          </TabsTrigger>
+          <TabsTrigger value="contribute" className="flex items-center gap-2 text-base py-2">
+            <HeartHandshake className="h-5 w-5" /> Contribuir
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="help">
+          <Card className="p-6 space-y-4 text-center">
+            <CardHeader className="p-0 pb-2">
+              <HelpCircle className="h-16 w-16 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl font-bold text-primary">Precisa de Ajuda?</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 space-y-4">
+              <p className="text-lg text-muted-foreground">
+                Nossa equipe de suporte está pronta para te ajudar! Entre em contato conosco via WhatsApp para um atendimento rápido.
+              </p>
+              <Button 
+                onClick={handleWhatsappClick} 
+                className="w-full py-6 text-lg bg-green-600 hover:bg-green-700 text-white"
+              >
+                <MessageSquare className="h-6 w-6 mr-3" />
+                Falar com Suporte via WhatsApp
+              </Button>
+              <p className="text-sm text-muted-foreground mt-4">
+                Fique à vontade para mandar mensagem, iremos responder o mais rápido possível.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="contribute">
+          <Card className="p-6 space-y-6 text-center">
+            <CardHeader className="p-0 pb-2">
+              <HeartHandshake className="h-16 w-16 text-primary mx-auto mb-4" />
+              <CardTitle className="text-2xl font-bold text-primary">Apoie o Raízes da Fé</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 space-y-4">
+              <p className="text-lg text-muted-foreground">
+                Se você ama o Raízes da Fé e deseja nos ajudar a continuar crescendo, considere as seguintes formas de contribuição:
+              </p>
+              
+              <div className="space-y-3 text-left">
+                <div className="flex items-start gap-3">
+                  <Crown className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Assine o Plano Pro</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Tenha acesso a recursos exclusivos e ajude a manter o desenvolvimento do aplicativo.
+                    </p>
+                    <Button asChild variant="link" className="p-0 h-auto text-primary justify-start text-sm">
+                      <Link to="/manage-subscription">Ver Planos Pro</Link>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Envie seu Feedback</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Suas sugestões são valiosas para melhorarmos! Use o botão de suporte para nos enviar suas ideias.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Star className="h-6 w-6 text-yellow-500 fill-yellow-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-primary">Avalie o Aplicativo</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Deixe uma avaliação 5 estrelas na loja de aplicativos para nos ajudar a alcançar mais pessoas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
