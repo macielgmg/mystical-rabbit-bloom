@@ -11,6 +11,7 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { format } from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils'; // Importar cn para combinar classes
+import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -20,6 +21,7 @@ const sliderLabels = [
 const SpiritualJournalPage = () => {
   const navigate = useNavigate();
   const { session } = useSession();
+  const queryClient = useQueryClient(); // Inicializar useQueryClient
   const [spiritualState, setSpiritualState] = useState([4]);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -95,6 +97,14 @@ const SpiritualJournalPage = () => {
         throw error;
       }
       
+      // Invalida todas as queries de progresso diário para garantir a atualização
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
+
       if (nextTaskPath) {
         navigate(nextTaskPath);
       } else {

@@ -147,7 +147,13 @@ const VerseOfTheDayPage = () => {
         throw error;
       }
       
+      // Invalida todas as queries de progresso diário para garantir a atualização
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
@@ -259,10 +265,14 @@ const VerseOfTheDayPage = () => {
           disabled={isCompleting || !verseContent}
         >
           {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (
-            <>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {isLastTask ? "Finalizar Jornada" : "Continuar"}
-            </>
+            isLastTask ? (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Finalizar Jornada
+              </>
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )
           )}
         </Button>
       </div>

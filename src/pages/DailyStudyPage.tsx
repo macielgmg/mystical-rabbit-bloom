@@ -26,7 +26,7 @@ const DailyStudyPage = () => {
   const navigate = useNavigate();
   const { session, preferences, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null>(null); // Alterado para 'auxiliar_text'
+  const [studyContent, setStudyContent] = useState<{ text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
@@ -87,7 +87,7 @@ const DailyStudyPage = () => {
       if (studyTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, title, auxiliar_text, tags, url_audio') // Alterado para 'auxiliar_text'
+          .select('text_content, title, auxiliar_text, tags, url_audio')
           .eq('id', studyTemplateId)
           .single();
 
@@ -99,7 +99,7 @@ const DailyStudyPage = () => {
           setStudyContent({
             text: templateData.text_content,
             title: templateData.title || 'Estudo Diário',
-            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
+            auxiliar_text: templateData.auxiliar_text || null,
             tags: templateData.tags || null,
             url_audio: templateData.url_audio || null,
           });
@@ -154,6 +154,14 @@ const DailyStudyPage = () => {
       if (error) {
         throw error;
       }
+      
+      // Invalida todas as queries de progresso diário para garantir a atualização
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
@@ -288,7 +296,7 @@ const DailyStudyPage = () => {
                 </p>
                 {studyContent.auxiliar_text && (
                   <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
-                    <h3 className="text-xl font-bold text-primary/90 mb-2">Explicação</h3> {/* Alterado aqui */}
+                    <h3 className="text-xl font-bold text-primary/90 mb-2">Explicação</h3>
                     <p className="text-base text-muted-foreground leading-relaxed">
                       {studyContent.auxiliar_text}
                     </p>

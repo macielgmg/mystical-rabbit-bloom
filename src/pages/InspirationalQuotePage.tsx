@@ -162,7 +162,13 @@ const InspirationalQuotePage = () => {
         throw error;
       }
       
+      // Invalida todas as queries de progresso diário para garantir a atualização
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
       if (nextTaskPath) {
         navigate(nextTaskPath);

@@ -81,7 +81,7 @@ const QuickReflectionPage = () => {
         // Fetch template content, including 'auxiliar_text' field
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, auxiliar_text, url_audio') // Alterado para 'auxiliar_text'
+          .select('text_content, auxiliar_text, url_audio')
           .eq('id', reflectionTemplateId)
           .single();
 
@@ -92,7 +92,7 @@ const QuickReflectionPage = () => {
         } else if (templateData) {
           setReflectionContent({ 
             text: templateData.text_content, 
-            auxiliar_text: templateData.auxiliar_text || null, // Alterado para 'auxiliar_text'
+            auxiliar_text: templateData.auxiliar_text || null,
             url_audio: templateData.url_audio || null 
           });
         } else {
@@ -149,7 +149,13 @@ const QuickReflectionPage = () => {
         throw error;
       }
       
+      // Invalida todas as queries de progresso diário para garantir a atualização
+      queryClient.invalidateQueries({ queryKey: ['journalStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['verseOfTheDayTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['dailyStudyTaskStatus', userId] });
       queryClient.invalidateQueries({ queryKey: ['quickReflectionTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['inspirationalQuoteTaskStatus', userId] });
+      queryClient.invalidateQueries({ queryKey: ['myPrayerTaskStatus', userId] });
       
       if (nextTaskPath) {
         navigate(nextTaskPath);
