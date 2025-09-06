@@ -43,9 +43,9 @@ const App = () => (
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <TooltipProvider>
           <Toaster />
-          <Sonner />
-          <BrowserRouter>
+          <BrowserRouter> {/* BrowserRouter agora envolve SessionProvider e Sonner */}
             <SessionProvider>
+              <Sonner /> {/* Movido para dentro do BrowserRouter */}
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
