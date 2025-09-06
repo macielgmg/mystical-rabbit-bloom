@@ -110,32 +110,39 @@ const DailyHistoryPage = () => {
           if (templateId) {
             availableContentIds.push(field);
             templatePromises.push(
-              supabase.from('daily_content_templates')
-                .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
-                .eq('id', templateId)
-                .single()
-                .then(({ data, error }) => {
-                  if (error) console.error(`Error fetching template for ${field}:`, error);
-                  if (data) {
-                    if (field === 'verse_of_the_day') {
-                      contentMap[field] = { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
-                    } else if (field === 'daily_study') {
-                      contentMap[field] = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
-                    } else if (field === 'quick_reflection') {
-                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                    } else if (field === 'inspirational_quotes') {
-                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
-                    } else if (field === 'my_prayer') {
-                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                    }
+              (async () => { // Usar um IIFE async para await diretamente
+                const { data, error } = await supabase.from('daily_content_templates')
+                  .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
+                  .eq('id', templateId)
+                  .single();
+
+                if (error) console.error(`Error fetching template for ${field}:`, error);
+                if (data) {
+                  if (field === 'verse_of_the_day') {
+                    return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null } as VerseContent;
+                  } else if (field === 'daily_study') {
+                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null } as StudyContent;
+                  } else if (field === 'quick_reflection') {
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as ReflectionContent;
+                  } else if (field === 'inspirational_quotes') {
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null } as QuoteContent;
+                  } else if (field === 'my_prayer') {
+                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as PrayerContent;
                   }
-                })
+                }
+                return null; // Fallback
+              })()
             );
           } else {
             contentMap[field] = null;
           }
         }
-        await Promise.all(templatePromises);
+        const resolvedContents = await Promise.all(templatePromises);
+        resolvedContents.forEach((content, index) => {
+          if (content) {
+            contentMap[availableContentIds[index] as keyof DailyContentActual] = content;
+          }
+        });
         setActualDailyContent(contentMap);
         if (availableContentIds.length > 0) {
           setActiveTab(availableContentIds[0]);
@@ -298,7 +305,7 @@ const DailyHistoryPage = () => {
                   {tab.id === 'verse_of_the_day' && tab.content && (
                     <>
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
-                        "{(tab.content as VerseContent).text}"
+                        {(tab.content as VerseContent).text}
                       </p>
                       <p className="text-sm font-semibold text-muted-foreground mt-2">
                         — {(tab.content as VerseContent).reference}

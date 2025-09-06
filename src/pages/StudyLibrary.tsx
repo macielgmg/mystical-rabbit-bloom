@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/contexts/SessionContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Crown } from 'lucide-react'; // Adicionado Crown
 import { Input } from "@/components/ui/input";
 import { showError, showStudyAcquiredToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';

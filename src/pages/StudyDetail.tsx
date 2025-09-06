@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { showError } from '@/utils/toast'; // Adicionado importação
+import { showError } from '@/utils/toast';
 
 interface ChapterFromDB {
   id: string;
@@ -346,11 +346,15 @@ const StudyDetail = () => {
             <Pagination className="mt-8">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Anterior</PaginationPrevious>
+                  <Button asChild variant="ghost" size="icon" disabled={currentPage === 1}>
+                    <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                  </Button>
                 </PaginationItem>
                 {renderPaginationItems()}
                 <PaginationItem>
-                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Próximo</PaginationNext>
+                  <Button asChild variant="ghost" size="icon" disabled={currentPage === totalPages}>
+                    <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                  </Button>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>

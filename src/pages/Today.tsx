@@ -33,12 +33,18 @@ interface DailyContentTemplateIds {
 }
 
 // Tipagem para o conteúdo real (texto) a ser exibido
+interface VerseContent { text: string; reference: string; explanation: string | null; url_audio: string | null; }
+interface StudyContent { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null; }
+interface ReflectionContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
+interface QuoteContent { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null; }
+interface PrayerContent { text: string | null; auxiliar_text: string | null; url_audio: string | null; }
+
 interface DailyContentActual {
-  verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
-  daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
-  quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null;
-  my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
+  verse_of_the_day: VerseContent | null;
+  daily_study: StudyContent | null;
+  quick_reflection: ReflectionContent | null;
+  inspirational_quotes: QuoteContent | null;
+  my_prayer: PrayerContent | null;
 }
 
 interface DailyContentTemplate {
@@ -248,35 +254,35 @@ const Today = () => {
       for (const [key, templateId] of Object.entries(templateTypes)) {
         if (templateId) {
           contentPromises.push(
-            Promise.resolve(supabase.from('daily_content_templates') // Envolvido em Promise.resolve
-              .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
-              .eq('id', templateId)
-              .single())
-              .then(({ data, error }) => {
-                if (error) {
-                  console.error(`Erro ao buscar template para ${key} (ID: ${templateId}):`, error);
-                  return null;
-                }
-                if (key === 'verse_of_the_day' && data) {
-                  return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
-                }
-                if (key === 'daily_study' && data) {
-                    return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
-                }
-                if (key === 'quick_reflection' && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                }
-                if (key === 'inspirational_quotes' && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
-                }
-                if (key === 'my_prayer' && data) {
-                    return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
-                }
-                return null; // Fallback
-              })
-              .then(content => {
-                contentMap[key as keyof DailyContentActual] = content;
-              })
+            (async () => { // Usar um IIFE async para await diretamente
+              const { data, error } = await supabase.from('daily_content_templates')
+                .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
+                .eq('id', templateId)
+                .single();
+
+              if (error) {
+                console.error(`Erro ao buscar template para ${key} (ID: ${templateId}):`, error);
+                return null;
+              }
+              if (key === 'verse_of_the_day' && data) {
+                return { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null } as VerseContent;
+              }
+              if (key === 'daily_study' && data) {
+                  return { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null } as StudyContent;
+              }
+              if (key === 'quick_reflection' && data) {
+                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as ReflectionContent;
+              }
+              if (key === 'inspirational_quotes' && data) {
+                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null } as QuoteContent;
+              }
+              if (key === 'my_prayer' && data) {
+                  return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null } as PrayerContent;
+              }
+              return null; // Fallback
+            })().then(content => {
+              contentMap[key as keyof DailyContentActual] = content;
+            })
           );
         } else {
           contentMap[key as keyof DailyContentActual] = null;

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, BookOpen, Share2, CheckCircle, Tag, Settings, Info, X, ArrowRight } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast'; // Adicionado showSuccess
+import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,6 +42,7 @@ const DailyStudyPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   } = useDailyTasksProgress();
 
   const currentTaskName = 'daily_study';
@@ -51,6 +52,7 @@ const DailyStudyPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   };
 
   // isFirstTask e previousTaskPath podem ser calculados fora do handleCompleteTask
