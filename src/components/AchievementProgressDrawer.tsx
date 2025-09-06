@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerContent,
 } from "@/components/ui/drawer";
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -34,10 +34,10 @@ interface AchievementProgressDrawerProps {
   unlockedAchievementIds: Set<string>;
   conditionData: {
     totalCompletedChapters: number;
-    completedStudies: Set<string>;
-    streakCount: number;
-    totalShares: number;
-    totalJournalEntries: number;
+    completedStudies: Set<string>; // IDs dos estudos completos
+    streakCount: number; // Adicionado para a nova conquista
+    totalShares: number; // Adicionado para a nova conquista
+    totalJournalEntries: number; // Adicionado para a nova conquista
     isPro: boolean;
   } | null;
 }
@@ -102,7 +102,7 @@ export const AchievementProgressDrawer = ({
                             <span>Progresso:</span>
                             <span>{ach.progress.current} / {ach.progress.target} {ach.progress.unit}{ach.progress.target > 1 && ach.progress.unit !== '' ? 's' : ''}</span>
                           </div>
-                          <Progress value={progressPercentage} className="h-2" indicatorColor="bg-primary" />
+                          <Progress value={progressPercentage} className="h-2" />
                         </div>
                       )}
                       {isCompleted && (
