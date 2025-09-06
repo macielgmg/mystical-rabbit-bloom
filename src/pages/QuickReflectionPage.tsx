@@ -14,11 +14,7 @@ import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirst
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
-
-// Helper para obter a chave do status de conclusão
-const getCompletionStatusKey = (taskName: string) => {
-  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
-};
+import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
 
 const QuickReflectionPage = () => {
   const navigate = useNavigate();
@@ -60,7 +56,7 @@ const QuickReflectionPage = () => {
         return;
       }
 
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayStr = getLocalDateString(new Date()); // Usar getLocalDateString
       const userId = session.user.id;
 
       // Fetch daily content template ID
@@ -135,7 +131,7 @@ const QuickReflectionPage = () => {
       return;
     }
     setIsCompleting(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString(new Date()); // Usar getLocalDateString
     const userId = session.user.id;
 
     try {

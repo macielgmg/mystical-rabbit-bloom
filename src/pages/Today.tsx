@@ -16,6 +16,7 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import { getVerseOfTheDay } from "@/content/dailyVerses";
 import { Progress } from '@/components/ui/progress';
 import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
+import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
 
 // Tipagem para os IDs dos templates armazenados em daily_content_for_users
 interface DailyContentTemplateIds {
@@ -132,7 +133,7 @@ const Today = () => {
 
     setLoadingDailyContent(true);
     const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+    const todayStr = getLocalDateString(today); // Usar getLocalDateString
     const userId = session.user.id;
 
     // Fetch ALL daily content dates for the user
@@ -173,7 +174,7 @@ const Today = () => {
     let needsUpdate = true;
     if (existingContentIds && existingContentIds.updated_at) {
       const lastUpdateDate = parseISO(existingContentIds.updated_at);
-      if (isSameDay(lastUpdateDate, today)) {
+      if (isSameDay(lastUpdateDate, today)) { // isSameDay compara apenas a data, ignorando o tempo
         needsUpdate = false;
         currentDailyContentIds = existingContentIds;
       }
@@ -303,12 +304,12 @@ const Today = () => {
   useEffect(() => {
     if (streakData && session?.user) {
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0); // Zera o horário para comparação de datas
 
       const lastDateStr = streakData.last_streak_date;
       const lastDate = lastDateStr ? new Date(new Date(lastDateStr).toLocaleString("en-US", { timeZone: "UTC" })) : null;
       if (lastDate) {
-        lastDate.setHours(0, 0, 0, 0);
+        lastDate.setHours(0, 0, 0, 0); // Zera o horário para comparação de datas
       }
 
       let newStreak = streakData.streak_count || 0;
@@ -333,7 +334,7 @@ const Today = () => {
       if (needsUpdate) {
         updateStreakMutation.mutate({
           streak_count: newStreak,
-          last_streak_date: today.toISOString().split('T')[0],
+          last_streak_date: getLocalDateString(today), // Usar getLocalDateString aqui
         });
       }
     }

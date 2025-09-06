@@ -14,11 +14,7 @@ import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
-
-// Helper para obter a chave do status de conclusão
-const getCompletionStatusKey = (taskName: string) => {
-  return `is${taskName.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}Completed`;
-};
+import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
 
 const VerseOfTheDayPage = () => {
   const navigate = useNavigate();
@@ -49,9 +45,10 @@ const VerseOfTheDayPage = () => {
     isMyPrayerTaskCompleted,
   };
 
-  // isFirstTask e previousTaskPath podem ser calculados fora do handleCompleteTask
-  const isFirstTask = isFirstTaskInSequence(currentTaskName);
+  const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
+  const nextTaskPath = getNextIncompleteTaskPath(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });
   const previousTaskPath = getPreviousTaskPath(currentTaskName);
+  const isFirstTask = isFirstTaskInSequence(currentTaskName);
 
   useEffect(() => {
     const fetchVerse = async () => {
@@ -60,7 +57,7 @@ const VerseOfTheDayPage = () => {
         return;
       }
 
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayStr = getLocalDateString(new Date()); // Usar getLocalDateString
       const userId = session.user.id;
 
       // 1. Buscar o ID do template do versículo do dia para o usuário e data atual
@@ -134,7 +131,7 @@ const VerseOfTheDayPage = () => {
       return;
     }
     setIsCompleting(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString(new Date()); // Usar getLocalDateString
     const userId = session.user.id;
 
     try {

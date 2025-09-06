@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLocalDateString } from '@/lib/utils'; // Importar a nova função
 
 const sliderLabels = [
   "Completamente desconectado", "Distante", "Indiferente",
@@ -61,7 +62,7 @@ const SpiritualJournalPage = () => {
         setLoading(false);
         return;
       }
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayStr = getLocalDateString(new Date()); // Usar getLocalDateString
       const { data, error } = await supabase
         .from('daily_tasks_progress')
         .select('value')
@@ -84,7 +85,7 @@ const SpiritualJournalPage = () => {
       return;
     }
     setIsSaving(true);
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = getLocalDateString(new Date()); // Usar getLocalDateString
     const newValue = spiritualState[0];
     const userId = session.user.id;
 
