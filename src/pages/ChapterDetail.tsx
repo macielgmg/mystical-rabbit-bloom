@@ -323,8 +323,8 @@ const ChapterDetail = () => {
 
             <div className="mb-6 space-y-2 pt-4 border-t border-muted-foreground/20 mt-6">
                 <div className="flex justify-between items-center">
-                    <h4 className="font-semibold text-primary/80">Seu Progresso no Estudo</h4>
-                    <span className="text-sm text-muted-foreground">{completedChaptersCount} de {totalChaptersCount} capítulos concluídos</span>
+                    <h4 className="font-semibold text-primary/80">Progresso</h4> {/* Alterado de 'Seu Progresso no Estudo' para 'Progresso' */}
+                    <span className="text-sm text-muted-foreground">{completedChaptersCount} de {totalChaptersCount}</span> {/* Alterado de 'capítulos concluídos' para vazio */}
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2.5">
                     <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
