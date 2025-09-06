@@ -256,11 +256,15 @@ const DailyHistoryPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-4">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1 mb-6 h-auto p-1"> {/* Aumentado mb-4 para mb-6, adicionado h-auto e p-1 */}
           {availableTabs.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id} 
+              className="flex flex-col items-center gap-1 text-sm sm:text-base h-16 px-2 py-2" // Aumentado text-xs para text-sm, adicionado h-16 e padding
+            >
               {getTaskCompletionIcon(tab.id)}
-              <tab.icon className="h-4 w-4" />
+              <tab.icon className="h-5 w-5" /> {/* Aumentado ícone */}
               {tab.label}
             </TabsTrigger>
           ))}
