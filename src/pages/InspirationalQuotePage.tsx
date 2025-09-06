@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X, ArrowRight } from 'lucide-react'; // Adicionado ArrowRight
+import { ArrowLeft, Loader2, Sparkles, Share2, CheckCircle, X, ArrowRight } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,13 +13,13 @@ import { useDailyTasksProgress } from '@/hooks/use-daily-tasks-progress';
 import { getNextIncompleteTaskPath, isLastTaskInSequenceAndAllCompleted, isFirstTaskInSequence, getPreviousTaskPath } from '@/utils/dailyTasksSequence';
 import { cn } from '@/lib/utils';
 import { AudioPlayer } from '@/components/AudioPlayer';
-import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder'; // Importar o novo componente
+import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
 
 const InspirationalQuotePage = () => {
   const navigate = useNavigate();
-  const { session, isPro } = useSession(); // Adicionado isPro
+  const { session, isPro } = useSession();
   const queryClient = useQueryClient();
-  const [quoteContent, setQuoteContent] = useState<{ text: string | null; url_audio: string | null } | null>(null);
+  const [quoteContent, setQuoteContent] = useState<{ text: string | null; auxiliar_text: string | null; url_audio: string | null } | null>(null); // Adicionado auxiliar_text
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
 
@@ -79,7 +79,7 @@ const InspirationalQuotePage = () => {
       if (quoteTemplateId) {
         const { data: templateData, error: templateError } = await supabase
           .from('daily_content_templates')
-          .select('text_content, url_audio')
+          .select('text_content, auxiliar_text, url_audio') // Adicionado auxiliar_text
           .eq('id', quoteTemplateId)
           .single();
 
@@ -88,7 +88,7 @@ const InspirationalQuotePage = () => {
           showError("Erro ao carregar o conteúdo da citação.");
           setQuoteContent(null);
         } else if (templateData) {
-          setQuoteContent({ text: templateData.text_content, url_audio: templateData.url_audio || null });
+          setQuoteContent({ text: templateData.text_content, auxiliar_text: templateData.auxiliar_text || null, url_audio: templateData.url_audio || null });
         } else {
           setQuoteContent(null);
         }
@@ -102,15 +102,16 @@ const InspirationalQuotePage = () => {
 
   const handleShare = () => {
     if (navigator.share && quoteContent?.text) {
+      const shareText = `Citação Inspiradora: "${quoteContent.text}"\n\n${quoteContent.auxiliar_text ? `Para Refletir: ${quoteContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé!`;
       navigator.share({
         title: 'Citação Inspiradora - Raízes da Fé',
-        text: `Citação Inspiradora: "${quoteContent.text}"\n\nConfira o app Raízes da Fé!`,
+        text: shareText,
         url: window.location.href,
       })
       .then(() => showSuccess('Citação compartilhada com sucesso!'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      const shareText = `Citação Inspiradora: "${quoteContent?.text || ''}"\n\nConfira o app Raízes da Fé: ${window.location.href}`;
+      const shareText = `Citação Inspiradora: "${quoteContent?.text || ''}"\n\n${quoteContent?.auxiliar_text ? `Para Refletir: ${quoteContent.auxiliar_text}\n\n` : ''}Confira o app Raízes da Fé: ${window.location.href}`;
       navigator.clipboard.writeText(shareText)
         .then(() => showSuccess('Citação copiada para a área de transferência!'))
         .catch(() => showError('Não foi possível copiar a citação.'));
@@ -207,6 +208,14 @@ const InspirationalQuotePage = () => {
               <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                 "{quoteContent.text}"
               </p>
+              {quoteContent.auxiliar_text && ( // Adicionado: Seção "Para Refletir"
+                <div className="mt-6 pt-4 border-t border-muted-foreground/20 text-left">
+                  <h3 className="text-xl font-bold text-primary/90 mb-2">Para Refletir</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    {quoteContent.auxiliar_text}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (

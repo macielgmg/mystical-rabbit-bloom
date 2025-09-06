@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tabs";
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { ProAudioPlaceholder } from '@/components/ProAudioPlaceholder';
-import { Badge } from '@/components/ui/badge'; // Importar Badge
+import { Badge } from '@/components/ui/badge';
 
 // Define interfaces for fetched data
 interface DailyContentTemplate {
@@ -46,7 +46,7 @@ interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
   daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
   quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; url_audio: string | null } | null;
+  inspirational_quotes: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null; // Adicionado auxiliar_text
   my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
@@ -58,7 +58,7 @@ const DailyHistoryPage = () => {
   const [dailyContentIds, setDailyContentIds] = useState<DailyContentForUser | null>(null);
   const [actualDailyContent, setActualDailyContent] = useState<Partial<DailyContentActual> | null>(null);
   const [dailyTasksProgress, setDailyTasksProgress] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<string>(''); // New state for active tab
+  const [activeTab, setActiveTab] = useState<string>('');
 
   // States for historical daily progress
   const [completedTasksCount, setCompletedTasksCount] = useState(0);
@@ -93,7 +93,7 @@ const DailyHistoryPage = () => {
 
       const contentMap: Partial<DailyContentActual> = {};
       const templatePromises: Promise<any>[] = [];
-      const availableContentIds: string[] = []; // To track which content types are available
+      const availableContentIds: string[] = [];
 
       if (contentIds) {
         const templateFields: Array<keyof DailyContentForUser> = ['verse_of_the_day', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
@@ -101,7 +101,7 @@ const DailyHistoryPage = () => {
         for (const field of templateFields) {
           const templateId = contentIds[field];
           if (templateId) {
-            availableContentIds.push(field); // Add to available content types
+            availableContentIds.push(field);
             templatePromises.push(
               supabase.from('daily_content_templates')
                 .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
@@ -114,7 +114,11 @@ const DailyHistoryPage = () => {
                       contentMap[field] = { text: data.text_content, reference: data.reference || 'Versículo do Dia', explanation: data.explanation || null, url_audio: data.url_audio || null };
                     } else if (field === 'daily_study') {
                       contentMap[field] = { text: data.text_content, title: data.title || null, auxiliar_text: data.auxiliar_text || null, tags: data.tags || null, url_audio: data.url_audio || null };
-                    } else if (['quick_reflection', 'inspirational_quotes', 'my_prayer'].includes(field)) {
+                    } else if (field === 'quick_reflection') {
+                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    } else if (field === 'inspirational_quotes') { // Adicionado auxiliar_text para inspirational_quotes
+                      contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
+                    } else if (field === 'my_prayer') {
                       contentMap[field] = { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                     }
                   }
@@ -127,7 +131,7 @@ const DailyHistoryPage = () => {
         await Promise.all(templatePromises);
         setActualDailyContent(contentMap);
         if (availableContentIds.length > 0) {
-          setActiveTab(availableContentIds[0]); // Set the first available content type as the active tab
+          setActiveTab(availableContentIds[0]);
         }
       } else {
         setActualDailyContent(null);
@@ -147,12 +151,10 @@ const DailyHistoryPage = () => {
       const completedTasksSet = new Set<string>();
       progressData?.forEach(task => completedTasksSet.add(task.task_name));
       
-      // Define as tarefas que realmente contam para o progresso diário (excluindo o versículo)
       const allCoreTasks = ['spiritual_journal', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
       const currentDayTasksStatus: Record<string, boolean> = {};
       let currentDayCompletedCount = 0;
 
-      // O Versículo do Dia é sempre considerado "completo" para exibição, mas não para a barra de progresso
       currentDayTasksStatus['verse_of_the_day'] = true; 
 
       allCoreTasks.forEach(taskName => {
@@ -164,7 +166,7 @@ const DailyHistoryPage = () => {
       });
 
       setDailyTasksProgress(currentDayTasksStatus);
-      setTotalTasksCount(allCoreTasks.length); // Total de tarefas é o número de core tasks
+      setTotalTasksCount(allCoreTasks.length);
       setCompletedTasksCount(currentDayCompletedCount);
       setHistoryProgressPercentage(allCoreTasks.length > 0 ? (currentDayCompletedCount / allCoreTasks.length) * 100 : 0);
 
@@ -183,7 +185,6 @@ const DailyHistoryPage = () => {
   }, [fetchDailyContentAndProgress]);
 
   const getTaskCompletionIcon = (taskName: string) => {
-    // O Versículo do Dia sempre retorna o ícone de completo
     if (taskName === 'verse_of_the_day') {
       return <CheckCircle className="h-4 w-4 text-green-500" />;
     }
@@ -356,6 +357,11 @@ const DailyHistoryPage = () => {
                       <p className="text-lg font-serif italic text-primary/90 leading-relaxed">
                         "{tab.content.text}"
                       </p>
+                      {tab.content.auxiliar_text && ( // Adicionado: Exibir auxiliar_text
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {tab.content.auxiliar_text}
+                        </p>
+                      )}
                       {tab.content.url_audio && (isPro ? (
                         <AudioPlayer src={tab.content.url_audio} className="mt-4" />
                       ) : (
