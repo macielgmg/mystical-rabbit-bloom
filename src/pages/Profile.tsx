@@ -270,7 +270,7 @@ const Profile = () => {
 
         {/* Ajuda e Suporte */}
         <Link 
-          to="#" // Link placeholder
+          to="/help-and-support" // Link atualizado para a nova página
           className="flex items-center justify-between rounded-lg bg-card p-4 shadow-sm transition-colors hover:bg-secondary/50"
         >
           <div className="flex items-center gap-4">

@@ -30,8 +30,9 @@ import QuickReflectionPage from "./pages/QuickReflectionPage";
 import InspirationalQuotePage from "./pages/InspirationalQuotePage";
 import MyPrayerPage from "./pages/MyPrayerPage";
 import AboutAppPage from "./pages/AboutAppPage";
-import AccountSecurityPage from "./pages/AccountSecurityPage"; // Import AccountSecurityPage
-import DailyHistoryPage from "./pages/DailyHistoryPage"; // Import DailyHistoryPage
+import AccountSecurityPage from "./pages/AccountSecurityPage";
+import DailyHistoryPage from "./pages/DailyHistoryPage";
+import HelpAndSupportPage from "./pages/HelpAndSupportPage"; // Import HelpAndSupportPage
 
 
 const queryClient = new QueryClient();
@@ -66,7 +67,8 @@ const App = () => (
                   <Route path="/preferences" element={<PreferencesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/about-app" element={<AboutAppPage />} />
-                  <Route path="/account-security" element={<AccountSecurityPage />} /> {/* New route for AccountSecurityPage */}
+                  <Route path="/account-security" element={<AccountSecurityPage />} />
+                  <Route path="/help-and-support" element={<HelpAndSupportPage />} /> {/* New route for HelpAndSupportPage */}
                   <Route path="/study/:studyId" element={<StudyDetail />} />
                   <Route path="/study/:studyId/chapter/:chapterId" element={<ChapterDetail />} />
                   <Route path="/today" element={<Today />} />
@@ -76,7 +78,7 @@ const App = () => (
                   <Route path="/today/quick-reflection" element={<QuickReflectionPage />} />
                   <Route path="/today/inspirational-quote" element={<InspirationalQuotePage />} />
                   <Route path="/today/my-prayer" element={<MyPrayerPage />} />
-                  <Route path="/today/history/:date" element={<DailyHistoryPage />} /> {/* New route for DailyHistoryPage */}
+                  <Route path="/today/history/:date" element={<DailyHistoryPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
