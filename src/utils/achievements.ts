@@ -10,7 +10,16 @@ export interface Achievement {
   icon_name: string;
 }
 
-export const checkAndAwardAchievements = async (userId: string): Promise<Achievement[]> => {
+interface ConditionData {
+  totalCompletedChapters: number;
+  completedStudies: Set<string>;
+  streakCount: number;
+  totalShares: number;
+  totalJournalEntries: number;
+  isPro: boolean;
+}
+
+export const checkAndAwardAchievements = async (userId: string): Promise<{ newAchievements: Achievement[], conditionData: ConditionData }> => {
   try {
     // 1. Busca todos os dados necessários do Supabase em paralelo.
     const [
@@ -38,7 +47,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
 
     if (!allAchievementsFromDb) {
       console.error("Não foi possível buscar a lista de conquistas do banco de dados.");
-      return [];
+      return { newAchievements: [], conditionData: { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false } };
     }
 
     const unlockedIds = new Set(unlockedAchievementsData?.map(a => a.achievement_id) || []);
@@ -75,7 +84,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
       }
     });
 
-    const conditionData = {
+    const conditionData: ConditionData = {
       totalCompletedChapters,
       completedStudies,
       streakCount,
@@ -110,15 +119,15 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
       
       if (insertError) {
         console.error('Erro ao conceder conquistas:', insertError);
-        return [];
+        return { newAchievements: [], conditionData };
       }
       
-      return achievementsToAward;
+      return { newAchievements: achievementsToAward, conditionData };
     }
 
-    return [];
+    return { newAchievements: [], conditionData };
   } catch (error) {
     console.error("Ocorreu um erro inesperado ao verificar as conquistas:", error);
-    return [];
+    return { newAchievements: [], conditionData: { totalCompletedChapters: 0, completedStudies: new Set(), streakCount: 0, totalShares: 0, totalJournalEntries: 0, isPro: false } };
   }
 };
