@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/contexts/SessionContext';
 import { ArrowLeft, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
-import { localStudyContent } from '@/content/salmosContent'; // Mantido para o conteúdo textual
 import { showError, showAchievementToast } from '@/utils/toast';
 import { checkAndAwardAchievements } from '@/utils/achievements';
 import { useQueryClient } from '@tanstack/react-query';
@@ -126,10 +125,10 @@ const ChapterDetail = () => {
         return;
       }
 
-      // 2. Fetch current chapter details from DB
+      // 2. Fetch current chapter details from DB, including bible_text, explanation, and application
       const { data: chapterDB, error: chapterError } = await supabase
         .from('chapters')
-        .select('*')
+        .select('*, bible_text, explanation, application') // Explicitly select these columns
         .eq('id', chapterId)
         .eq('study_id', studyId)
         .single();
@@ -160,36 +159,16 @@ const ChapterDetail = () => {
         setCurrentChapterIndex(chapterIndex);
       }
 
-      // 4. Get textual content from local file using chapter_number
-      let bible_text = '';
-      let explanation = '';
-      let application = '';
-
-      const studyKey = studyData.title.toLowerCase().replace(/\s/g, '-');
-      const localContentForStudy = localStudyContent[studyKey];
-
-      if (localContentForStudy) {
-        const localChapter = localContentForStudy.find(
-          (c) => c.chapter_number === chapterDB.chapter_number
-        );
-        if (localChapter) {
-          bible_text = localChapter.bible_text;
-          explanation = localChapter.explanation;
-          application = localChapter.application;
-        } else {
-          console.warn(`Local content not found for chapter ${chapterDB.chapter_number} in study ${studyKey}`);
-        }
-      }
-
+      // Set chapter data directly from DB
       setChapterData({
         id: chapterDB.id,
         title: chapterDB.title,
         chapter_number: chapterDB.chapter_number,
         study_id: studyData.id,
         study_title: studyData.title,
-        bible_text,
-        explanation,
-        application,
+        bible_text: chapterDB.bible_text || 'Conteúdo bíblico não disponível.',
+        explanation: chapterDB.explanation || 'Explicação não disponível.',
+        application: chapterDB.application || 'Aplicação prática não disponível.',
       });
 
       // 5. Fetch user progress and notes for current chapter
@@ -337,10 +316,10 @@ const ChapterDetail = () => {
         <CardContent className="space-y-6">
           <div className="prose max-w-none">
             <h3 className="font-bold text-lg text-primary/90">Texto Bíblico</h3>
-            <blockquote className="border-l-4 border-primary/50 pl-4 italic">{chapterData.bible_text || 'Conteúdo bíblico não disponível.'}</blockquote>
+            <blockquote className="border-l-4 border-primary/50 pl-4 italic">{chapterData.bible_text}</blockquote>
             
             <h3 className="font-bold text-lg text-primary/90 mt-6">Explicação</h3>
-            <p>{chapterData.explanation || 'Explicação não disponível.'}</p>
+            <p>{chapterData.explanation}</p>
 
             <div className="mb-6 space-y-2 pt-4 border-t border-muted-foreground/20 mt-6">
                 <div className="flex justify-between items-center">
@@ -353,7 +332,7 @@ const ChapterDetail = () => {
             </div>
 
             <h3 className="font-bold text-lg text-primary/90 mt-6">Aplicação Prática</h3>
-            <p>{chapterData.application || 'Aplicação prática não disponível.'}</p>
+            <p>{chapterData.application}</p>
           </div>
 
           <div className="space-y-4 pt-6 border-t border-muted-foreground/20">
