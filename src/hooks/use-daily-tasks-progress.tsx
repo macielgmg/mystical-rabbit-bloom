@@ -16,7 +16,15 @@ const fetchTaskStatus = async (userId: string, taskName: string) => {
     .eq('task_date', todayStr)
     .single();
   
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) {
+    // PGRST116 means "no rows found"
+    // 406 (Not Acceptable) can sometimes be returned by PostgREST when .single() finds no matching row after RLS.
+    // We treat both as the task not being completed for the current day.
+    if (error.code === 'PGRST116' || error.status === 406) {
+      return false;
+    }
+    throw error; // Re-throw other errors
+  }
   return !!data;
 };
 
