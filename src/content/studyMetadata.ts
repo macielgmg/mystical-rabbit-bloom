@@ -26,102 +26,102 @@ export const localStudies: LocalStudyMetadata[] = [
       {
         id: '1a2b3c4d-5e6f-4789-a012-345678901234', // ID para Salmo 1
         chapter_number: 1,
-        title: 'Os Dois Caminhos',
+        title: 'Salmo 1: Os Dois Caminhos',
       },
       {
         id: '2a3b4c5d-6e7f-4890-b123-456789012345', // ID para Salmo 2
         chapter_number: 2,
-        title: 'O Rei Ungido',
+        title: 'Salmo 2: O Rei Ungido',
       },
       {
         id: '3a4b5c6d-7e8f-4901-c234-567890123456', // ID para Salmo 3
         chapter_number: 3,
-        title: 'Confiança em Meio à Adversidade',
+        title: 'Salmo 3: Confiança em Meio à Adversidade',
       },
       {
         id: '4a5b6c7d-8e9f-4012-d345-678901234567', // ID para Salmo 4
         chapter_number: 4,
-        title: 'Oração Noturna de Confiança',
+        title: 'Salmo 4: Oração Noturna de Confiança',
       },
       {
         id: '5a6b7c8d-9e0f-4123-e456-789012345678', // ID para Salmo 5
         chapter_number: 5,
-        title: 'Oração Matinal por Proteção',
+        title: 'Salmo 5: Oração Matinal por Proteção',
       },
       {
         id: '6a7b8c9d-0e1f-4234-f567-890123456789', // ID para Salmo 6
         chapter_number: 6,
-        title: 'Clamor por Misericórdia e Cura',
+        title: 'Salmo 6: Clamor por Misericórdia e Cura',
       },
       {
         id: '7a8b9c0d-1e2f-4345-a678-901234567890', // ID para Salmo 7
         chapter_number: 7,
-        title: 'Oração por Justiça',
+        title: 'Salmo 7: Oração por Justiça',
       },
       {
         id: '8a9b0c1d-2e3f-4456-b789-012345678901', // ID para Salmo 8
         chapter_number: 8,
-        title: 'A Glória de Deus e a Dignidade do Homem',
+        title: 'Salmo 8: A Glória de Deus e a Dignidade do Homem',
       },
       {
         id: '9a0b1c2d-3e4f-4567-c890-123456789012', // ID para Salmo 9
         chapter_number: 9,
-        title: 'Louvor pela Justiça de Deus',
+        title: 'Salmo 9: Louvor pela Justiça de Deus',
       },
       {
         id: '0a1b2c3d-4e5f-4678-d901-234567890123', // ID para Salmo 10
         chapter_number: 10,
-        title: 'O Lamento pelo Oprimido',
+        title: 'Salmo 10: O Lamento pelo Oprimido',
       },
       {
         id: '1b2c3d4e-5f6a-4789-e012-34567890123b', // NOVO ID para Salmo 11
         chapter_number: 11,
-        title: 'Confiança Inabalável em Deus',
+        title: 'Salmo 11: Confiança Inabalável em Deus',
       },
       {
         id: '2c3d4e5f-6a7b-4890-f123-45678901234c', // NOVO ID para Salmo 12
         chapter_number: 12,
-        title: 'Oração Contra a Falsidade',
+        title: 'Salmo 12: Oração Contra a Falsidade',
       },
       {
         id: '3d4e5f6a-7b8c-4901-a234-56789012345d', // NOVO ID para Salmo 13
         chapter_number: 13,
-        title: 'Do Desespero à Confiança',
+        title: 'Salmo 13: Do Desespero à Confiança',
       },
       {
         id: '4e5f6a7b-8c9d-4012-b345-67890123456e', // NOVO ID para Salmo 14
         chapter_number: 14,
-        title: 'A Loucura da Negação de Deus',
+        title: 'Salmo 14: A Loucura da Negação de Deus',
       },
       {
         id: '5f6a7b8c-9d0e-4123-c456-78901234567f', // NOVO ID para Salmo 15
         chapter_number: 15,
-        title: 'O Cidadão do Reino de Deus',
+        title: 'Salmo 15: O Cidadão do Reino de Deus',
       },
       {
         id: '6a7b8c9d-0e1f-4234-d567-89012345678g', // NOVO ID para Salmo 16
         chapter_number: 16,
-        title: 'O Senhor é Minha Porção',
+        title: 'Salmo 16: O Senhor é Minha Porção',
       },
       {
         id: '7a8b9c0d-1e2f-4345-e678-90123456789h', // NOVO ID para Salmo 17
         chapter_number: 17,
-        title: 'Oração por Proteção e Justiça',
+        title: 'Salmo 17: Oração por Proteção e Justiça',
       },
       {
         id: '8a9b0c1d-2e3f-4456-f789-01234567890i', // NOVO ID para Salmo 18
         chapter_number: 18,
-        title: 'Hino de Vitória e Libertação',
+        title: 'Salmo 18: Hino de Vitória e Libertação',
       },
       {
         id: '9a0b1c2d-3e4f-4567-a890-12345678901j', // NOVO ID para Salmo 19
         chapter_number: 19,
-        title: 'A Glória de Deus na Criação e na Lei',
+        title: 'Salmo 19: A Glória de Deus na Criação e na Lei',
       },
       {
         id: '0a1b2c3d-4e5f-4678-b901-23456789012k', // NOVO ID para Salmo 20
         chapter_number: 20,
-        title: 'Oração por Vitória na Batalha',
+        title: 'Salmo 20: Oração por Vitória na Batalha',
       },
       // Adicione mais capítulos aqui conforme necessário
     ],

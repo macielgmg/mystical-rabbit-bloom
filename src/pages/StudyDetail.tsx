@@ -232,6 +232,9 @@ const StudyDetail = () => {
   const totalChapters = allChapters.length;
   const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
 
+  // ID do estudo "150 Salmos Explicados"
+  const SALMOS_STUDY_ID = '8a1b2c3d-4e5f-4678-9012-34567890abcd';
+
   return (
     <div className="container mx-auto max-w-3xl">
       <Card>
@@ -267,7 +270,9 @@ const StudyDetail = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {chapter.completed ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
-                    <span className="font-medium">Capítulo {chapter.chapter_number}: {chapter.title}</span>
+                    <span className="font-medium">
+                      {study.id === SALMOS_STUDY_ID ? chapter.title : `Capítulo ${chapter.chapter_number}: ${chapter.title}`}
+                    </span>
                   </div>
                 </div>
               </Link>
