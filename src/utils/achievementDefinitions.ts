@@ -9,7 +9,8 @@ export interface AchievementDefinition {
   checkCondition: (data: {
     totalCompletedChapters: number;
     completedStudies: Set<string>; // IDs dos estudos completos
-    // Adicione outros dados aqui se precisar para futuras conquistas (ex: streak, tarefas diárias)
+    streakCount: number; // Adicionado para a nova conquista
+    // Adicione outros dados aqui se precisar para futuras conquistas (ex: tarefas diárias)
   }) => boolean;
 }
 
@@ -50,6 +51,12 @@ export const achievementDefinitions: AchievementDefinition[] = [
     description: 'Conclua seu primeiro estudo completo.',
     icon_name: 'Award',
     checkCondition: (data) => data.completedStudies.size >= 1,
+  },
+  {
+    name: 'Chama Acesa',
+    description: 'Mantenha uma sequência de 7 dias de estudo.',
+    icon_name: 'Flame', // Usando o ícone Flame, como na imagem
+    checkCondition: (data) => data.streakCount >= 7,
   },
   // Adicione mais conquistas aqui seguindo o mesmo padrão
 ];

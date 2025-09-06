@@ -19,12 +19,14 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
       { data: userProgressData, error: userProgressError },
       { data: allStudiesData, error: allStudiesError }, // Fetch all studies
       { data: allChaptersData, error: allChaptersError }, // Fetch all chapters
+      { data: profileData, error: profileError }, // Fetch profile data for streak
     ] = await Promise.all([
       supabase.from('user_achievements').select('achievement_id').eq('user_id', userId),
       supabase.from('achievements').select('*'),
       supabase.from('user_progress').select('chapter_id, study_id').eq('user_id', userId).not('completed_at', 'is', null),
       supabase.from('studies').select('id'), // Only need study IDs
       supabase.from('chapters').select('id, study_id'), // Need chapter IDs and their study_id
+      supabase.from('profiles').select('streak_count').eq('id', userId).single(), // Fetch streak count
     ]);
 
     if (unlockedError) throw unlockedError;
@@ -32,6 +34,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
     if (userProgressError) throw userProgressError;
     if (allStudiesError) throw allStudiesError;
     if (allChaptersError) throw allChaptersError;
+    if (profileError && profileError.code !== 'PGRST116') throw profileError; // Allow no profile found
 
     if (!allAchievementsFromDb) {
       console.error("Não foi possível buscar a lista de conquistas do banco de dados.");
@@ -45,7 +48,8 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
     // Prepara os dados para as condições das conquistas
     const totalCompletedChapters = userProgressData?.length || 0;
     const completedStudies = new Set<string>();
-    
+    const streakCount = profileData?.streak_count || 0; // Obter streak_count
+
     // Mapeia capítulos concluídos por estudo
     const completedChaptersByStudy: { [studyId: string]: number } = {};
     userProgressData?.forEach(progress => {
@@ -71,6 +75,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
     const conditionData = {
       totalCompletedChapters,
       completedStudies,
+      streakCount, // Incluir streakCount nos dados da condição
       // Adicione outros dados aqui se precisar para futuras condições de conquistas
     };
 
