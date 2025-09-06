@@ -58,5 +58,11 @@ export const achievementDefinitions: AchievementDefinition[] = [
     icon_name: 'Flame', // Usando o ícone Flame, como na imagem
     checkCondition: (data) => data.streakCount >= 7,
   },
+  {
+    name: 'Fogo Ardente',
+    description: 'Mantenha uma sequência de 30 dias de estudo.',
+    icon_name: 'TrendingUp', // Usando TrendingUp para indicar crescimento contínuo
+    checkCondition: (data) => data.streakCount >= 30,
+  },
   // Adicione mais conquistas aqui seguindo o mesmo padrão
 ];
