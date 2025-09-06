@@ -147,11 +147,15 @@ const DailyHistoryPage = () => {
       const completedTasksSet = new Set<string>();
       progressData?.forEach(task => completedTasksSet.add(task.task_name));
       
-      const allPossibleTasks = ['spiritual_journal', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
+      // Define as tarefas que realmente contam para o progresso diário (excluindo o versículo)
+      const allCoreTasks = ['spiritual_journal', 'daily_study', 'quick_reflection', 'inspirational_quotes', 'my_prayer'];
       const currentDayTasksStatus: Record<string, boolean> = {};
       let currentDayCompletedCount = 0;
 
-      allPossibleTasks.forEach(taskName => {
+      // O Versículo do Dia é sempre considerado "completo" para exibição, mas não para a barra de progresso
+      currentDayTasksStatus['verse_of_the_day'] = true; 
+
+      allCoreTasks.forEach(taskName => {
         const isCompleted = completedTasksSet.has(taskName);
         currentDayTasksStatus[taskName] = isCompleted;
         if (isCompleted) {
@@ -160,9 +164,9 @@ const DailyHistoryPage = () => {
       });
 
       setDailyTasksProgress(currentDayTasksStatus);
-      setTotalTasksCount(allPossibleTasks.length);
+      setTotalTasksCount(allCoreTasks.length); // Total de tarefas é o número de core tasks
       setCompletedTasksCount(currentDayCompletedCount);
-      setHistoryProgressPercentage(allPossibleTasks.length > 0 ? (currentDayCompletedCount / allPossibleTasks.length) * 100 : 0);
+      setHistoryProgressPercentage(allCoreTasks.length > 0 ? (currentDayCompletedCount / allCoreTasks.length) * 100 : 0);
 
     } catch (error: any) {
       console.error("Error fetching daily history:", error);
@@ -179,6 +183,10 @@ const DailyHistoryPage = () => {
   }, [fetchDailyContentAndProgress]);
 
   const getTaskCompletionIcon = (taskName: string) => {
+    // O Versículo do Dia sempre retorna o ícone de completo
+    if (taskName === 'verse_of_the_day') {
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    }
     return dailyTasksProgress[taskName] ? (
       <CheckCircle className="h-4 w-4 text-green-500" />
     ) : (
@@ -211,7 +219,7 @@ const DailyHistoryPage = () => {
         <div className="text-center text-muted-foreground py-16">
           <CalendarIcon className="h-24 w-24 text-muted-foreground/50 mx-auto mb-4" />
           <p className="text-lg">Nenhum conteúdo encontrado para {formattedDate}.</p>
-          <p className="text-sm">Que tal começar uma nova jornada de fé hoje?</p> {/* Mensagem alterada aqui */}
+          <p className="text-sm">Que tal começar uma nova jornada de fé hoje?</p>
           <Button onClick={() => navigate('/today')} className="mt-4">
             Voltar para Hoje
           </Button>
