@@ -315,19 +315,20 @@ const StudyDetail = () => {
                       {study.id === SALMOS_STUDY_ID ? chapter.title : `Capítulo ${chapter.chapter_number}: ${chapter.title}`}
                     </span>
                   </div>
-                </Link>
+                </div>
+              </Link>
             ))}
           </div>
 
           {totalPages > 1 && (
             <Pagination className="mt-8">
-              <PaginationContent className="flex flex-wrap justify-center gap-1"> {/* Adicionado flex-wrap e gap-1 */}
-                <PaginationItem className="flex-1 sm:flex-none"> {/* Ajustado para ocupar espaço em telas pequenas */}
-                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+              <PaginationContent className="flex flex-wrap justify-center gap-1">
+                <PaginationItem className="flex-1 sm:flex-none">
+                  <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>Anterior</PaginationPrevious>
                 </PaginationItem>
                 {renderPaginationItems()}
-                <PaginationItem className="flex-1 sm:flex-none"> {/* Ajustado para ocupar espaço em telas pequenas */}
-                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                <PaginationItem className="flex-1 sm:flex-none">
+                  <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>Próximo</PaginationNext>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
