@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSession } from "@/contexts/SessionContext";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from '@/contexts/SessionContext';
-import { Loader2, Search, Crown } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { showError } from '@/utils/toast';
+import { Loader2, Search } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { showError, showStudyAcquiredToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -62,14 +63,10 @@ const StudyLibrary = () => {
 
   useEffect(() => {
     const fetchStudiesAndProgress = async () => {
-      if (sessionLoading || !session?.user) {
-        setStudiesWithProgress([]);
-        setLoading(false);
-        return;
-      }
+      if (sessionLoading) return;
 
       setLoading(true);
-      const userId = session.user.id;
+      const userId = session?.user?.id;
 
       try {
         // 1. Fetch all studies from the database
@@ -82,7 +79,7 @@ const StudyLibrary = () => {
         // 2. Fetch all chapters for all studies
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
-          .select('id, study_id');
+          .select('id, study_id, chapter_number, title'); // Adicionado chapter_number e title
 
         if (chaptersError) throw chaptersError;
 
@@ -94,44 +91,50 @@ const StudyLibrary = () => {
           chaptersByStudy[chapter.study_id].push(chapter);
         });
 
-        // 3. Fetch all user progress
-        const { data: allUserProgress, error: progressError } = await supabase
-          .from('user_progress')
-          .select('chapter_id, completed_at, study_id')
-          .eq('user_id', userId);
+        // 3. Fetch all user progress (if user is logged in)
+        let completedChapterIds = new Set<string>();
+        let acquiredStudyIds = new Set<string>();
 
-        if (progressError) throw progressError;
+        if (userId) {
+          const { data: allUserProgress, error: progressError } = await supabase
+            .from('user_progress')
+            .select('chapter_id, completed_at, study_id')
+            .eq('user_id', userId);
 
-        const completedChapterIds = new Set(allUserProgress.filter(p => p.completed_at !== null).map(p => p.chapter_id));
-        const acquiredStudyIds = new Set(allUserProgress.map(p => p.study_id));
+          if (progressError) {
+            console.error('Error fetching all user progress:', progressError);
+          } else if (allUserProgress) {
+            allUserProgress.forEach(p => {
+              if (p.study_id) acquiredStudyIds.add(p.study_id);
+              if (p.completed_at !== null) {
+                completedChapterIds.add(p.chapter_id);
+              }
+            });
+          }
+        }
 
-        const studiesWithCalculatedProgress: StudyWithProgress[] = [];
-
-        for (const study of studiesData) {
+        const studiesWithCalculatedProgress: StudyWithProgress[] = studiesData.map(study => {
           const studyChapters = chaptersByStudy[study.id] || [];
           const totalChapters = studyChapters.length;
           
           const completedChapters = studyChapters.filter(chapter => completedChapterIds.has(chapter.id)).length;
           const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
-          const isAcquired = acquiredStudyIds.has(study.id);
+          
+          return {
+            ...study,
+            imageUrl: study.cover_image_url,
+            completedChapters,
+            totalChapters,
+            progressPercentage,
+            isAcquired: acquiredStudyIds.has(study.id),
+          };
+        });
 
-          // Only include studies that the user has acquired (started progress on)
-          if (isAcquired) {
-            studiesWithCalculatedProgress.push({
-              ...study,
-              imageUrl: study.cover_image_url,
-              completedChapters,
-              totalChapters,
-              progressPercentage,
-              isAcquired: true, // Explicitly true since we filtered for acquired studies
-            });
-          }
-        }
         setStudiesWithProgress(studiesWithCalculatedProgress);
 
       } catch (error: any) {
-        console.error('Error fetching studies and progress:', error);
-        showError('Erro ao carregar seus estudos: ' + error.message);
+        console.error('Error fetching studies for store:', error);
+        showError('Erro ao carregar estudos: ' + error.message);
         setStudiesWithProgress([]);
       } finally {
         setLoading(false);
@@ -139,7 +142,7 @@ const StudyLibrary = () => {
     };
 
     fetchStudiesAndProgress();
-  }, [session, sessionLoading, isUserPro]);
+  }, [session, sessionLoading]);
 
   const handleProStudyAccessAttempt = (studyTitle: string) => {
     setModalStudyTitle(studyTitle);

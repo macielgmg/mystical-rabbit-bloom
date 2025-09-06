@@ -37,6 +37,7 @@ const SpiritualJournalPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   } = useDailyTasksProgress();
 
   const currentTaskName = 'spiritual_journal';
@@ -46,6 +47,7 @@ const SpiritualJournalPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   };
 
   // isFirstTask pode ser calculado fora do handleSave, pois não depende do estado de conclusão atual

@@ -34,6 +34,7 @@ const MyPrayerPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   } = useDailyTasksProgress();
 
   const currentTaskName = 'my_prayer';
@@ -43,6 +44,7 @@ const MyPrayerPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   };
 
   // isFirstTask e previousTaskPath podem ser calculados fora do handleCompleteTask

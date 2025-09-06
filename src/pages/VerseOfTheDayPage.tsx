@@ -34,6 +34,7 @@ const VerseOfTheDayPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   } = useDailyTasksProgress();
 
   const currentTaskName = 'verse_of_the_day';
@@ -43,6 +44,7 @@ const VerseOfTheDayPage = () => {
     isQuickReflectionTaskCompleted,
     isInspirationalQuoteTaskCompleted,
     isMyPrayerTaskCompleted,
+    isVerseOfTheDayTaskCompleted, // Adicionado aqui
   };
 
   const isLastTask = isLastTaskInSequenceAndAllCompleted(currentTaskName, { ...completionStatus, isVerseOfTheDayTaskCompleted: true });

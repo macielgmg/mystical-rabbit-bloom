@@ -37,7 +37,7 @@ interface DailyContentActual {
   verse_of_the_day: { text: string; reference: string; explanation: string | null; url_audio: string | null } | null;
   daily_study: { text: string; title: string | null; auxiliar_text: string | null; tags: string[] | null; url_audio: string | null } | null;
   quick_reflection: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
-  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null; // Adicionado explanation
+  inspirational_quotes: { text: string | null; auxiliar_text: string | null; explanation: string | null; url_audio: string | null } | null;
   my_prayer: { text: string | null; auxiliar_text: string | null; url_audio: string | null } | null;
 }
 
@@ -141,8 +141,7 @@ const Today = () => {
     // Fetch ALL daily content dates for the user
     const { data: allDailyContentEntries, error: allEntriesError } = await supabase
       .from('daily_content_for_users')
-      .select('content_date')
-      .eq('user_id', userId);
+      .select('content_date');
 
     if (allEntriesError) {
       console.error("Erro ao buscar todas as datas de conteúdo diário:", allEntriesError);
@@ -249,10 +248,10 @@ const Today = () => {
       for (const [key, templateId] of Object.entries(templateTypes)) {
         if (templateId) {
           contentPromises.push(
-            supabase.from('daily_content_templates')
+            Promise.resolve(supabase.from('daily_content_templates') // Envolvido em Promise.resolve
               .select('text_content, reference, title, auxiliar_text, tags, explanation, url_audio')
               .eq('id', templateId)
-              .single()
+              .single())
               .then(({ data, error }) => {
                 if (error) {
                   console.error(`Erro ao buscar template para ${key} (ID: ${templateId}):`, error);
@@ -267,7 +266,7 @@ const Today = () => {
                 if (key === 'quick_reflection' && data) {
                     return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, url_audio: data.url_audio || null };
                 }
-                if (key === 'inspirational_quotes' && data) { // Adicionado auxiliar_text e explanation para inspirational_quotes
+                if (key === 'inspirational_quotes' && data) {
                     return { text: data.text_content, auxiliar_text: data.auxiliar_text || null, explanation: data.explanation || null, url_audio: data.url_audio || null };
                 }
                 if (key === 'my_prayer' && data) {

@@ -14,6 +14,7 @@ interface TaskCompletionStatus {
   isQuickReflectionTaskCompleted: boolean;
   isInspirationalQuoteTaskCompleted: boolean;
   isMyPrayerTaskCompleted: boolean;
+  isVerseOfTheDayTaskCompleted: boolean; // Adicionado aqui
 }
 
 export const getNextIncompleteTaskPath = (
