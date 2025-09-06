@@ -10,12 +10,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { localStudies } from '@/content/studyMetadata';
 import { supabase } from '@/integrations/supabase/client';
 import { useSession } from '@/contexts/SessionContext';
-import { Loader2, Search, Crown } from 'lucide-react'; // Adicionado Crown para o modal
+import { Loader2, Search, Crown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { showError, showStudyAcquiredToast } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -29,12 +28,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface StudyWithProgress {
+interface StudyFromDB {
   id: string;
   title: string;
   description: string;
   is_free: boolean;
-  imageUrl: string;
+  cover_image_url: string;
+}
+
+interface ChapterFromDB {
+  id: string;
+  study_id: string;
+  chapter_number: number;
+  title: string;
+}
+
+interface StudyWithProgress extends StudyFromDB {
+  imageUrl: string; // Mapeia cover_image_url para imageUrl para compatibilidade
   completedChapters: number;
   totalChapters: number;
   progressPercentage: number;
@@ -42,7 +52,7 @@ interface StudyWithProgress {
 }
 
 const StudyLibrary = () => {
-  const { session, loading: sessionLoading, isPro: isUserPro, setNewStudyNotification } = useSession();
+  const { session, loading: sessionLoading, isPro: isUserPro } = useSession();
   const navigate = useNavigate();
   const [studiesWithProgress, setStudiesWithProgress] = useState<StudyWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,49 +69,77 @@ const StudyLibrary = () => {
       }
 
       setLoading(true);
-      
-      const { data: allUserProgress, error: progressError } = await supabase
-        .from('user_progress')
-        .select('chapter_id, completed_at')
-        .eq('user_id', session.user.id);
+      const userId = session.user.id;
 
-      if (progressError) {
-        console.error('Error fetching user progress:', progressError);
-        setLoading(false);
-        return;
-      }
+      try {
+        // 1. Fetch all studies from the database
+        const { data: studiesData, error: studiesError } = await supabase
+          .from('studies')
+          .select('*');
 
-      const studiesData: StudyWithProgress[] = [];
+        if (studiesError) throw studiesError;
 
-      if (allUserProgress && allUserProgress.length > 0) {
-        const userChapterIds = new Set(allUserProgress.map(p => p.chapter_id));
-        const startedStudies = localStudies.filter(study =>
-          study.chapters.some(chapter => userChapterIds.has(chapter.id))
-        );
+        // 2. Fetch all chapters for all studies
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('id, study_id');
 
-        for (const study of startedStudies) {
-          const totalChapters = study.chapters.length;
-          const chapterIdsInStudy = new Set(study.chapters.map(c => c.id));
-          const completedChapters = allUserProgress.filter(p =>
-            chapterIdsInStudy.has(p.chapter_id) && p.completed_at !== null
-          ).length;
+        if (chaptersError) throw chaptersError;
+
+        const chaptersByStudy: { [studyId: string]: ChapterFromDB[] } = {};
+        chaptersData.forEach(chapter => {
+          if (!chaptersByStudy[chapter.study_id]) {
+            chaptersByStudy[chapter.study_id] = [];
+          }
+          chaptersByStudy[chapter.study_id].push(chapter);
+        });
+
+        // 3. Fetch all user progress
+        const { data: allUserProgress, error: progressError } = await supabase
+          .from('user_progress')
+          .select('chapter_id, completed_at, study_id')
+          .eq('user_id', userId);
+
+        if (progressError) throw progressError;
+
+        const completedChapterIds = new Set(allUserProgress.filter(p => p.completed_at !== null).map(p => p.chapter_id));
+        const acquiredStudyIds = new Set(allUserProgress.map(p => p.study_id));
+
+        const studiesWithCalculatedProgress: StudyWithProgress[] = [];
+
+        for (const study of studiesData) {
+          const studyChapters = chaptersByStudy[study.id] || [];
+          const totalChapters = studyChapters.length;
+          
+          const completedChapters = studyChapters.filter(chapter => completedChapterIds.has(chapter.id)).length;
           const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+          const isAcquired = acquiredStudyIds.has(study.id);
 
-          studiesData.push({
-            ...study,
-            completedChapters,
-            totalChapters,
-            progressPercentage,
-          });
+          // Only include studies that the user has acquired (started progress on)
+          if (isAcquired) {
+            studiesWithCalculatedProgress.push({
+              ...study,
+              imageUrl: study.cover_image_url,
+              completedChapters,
+              totalChapters,
+              progressPercentage,
+              isAcquired: true, // Explicitly true since we filtered for acquired studies
+            });
+          }
         }
-      }
+        setStudiesWithProgress(studiesWithCalculatedProgress);
 
-      setStudiesWithProgress(studiesData);
-      setLoading(false);
+      } catch (error: any) {
+        console.error('Error fetching studies and progress:', error);
+        showError('Erro ao carregar seus estudos: ' + error.message);
+        setStudiesWithProgress([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchStudiesAndProgress();
-  }, [session, sessionLoading]);
+  }, [session, sessionLoading, isUserPro]);
 
   const handleProStudyAccessAttempt = (studyTitle: string) => {
     setModalStudyTitle(studyTitle);

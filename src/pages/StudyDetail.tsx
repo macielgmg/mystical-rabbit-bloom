@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, PlayCircle, Loader2, Crown, Frown } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
-import { localStudies } from '@/content/studyMetadata';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,18 +26,23 @@ import {
 } from "@/components/ui/pagination";
 import { cn } from '@/lib/utils';
 
-interface Chapter {
+interface ChapterFromDB {
   id: string;
+  study_id: string;
   chapter_number: number;
   title: string;
+}
+
+interface Chapter extends ChapterFromDB {
   completed: boolean;
 }
 
-interface Study {
+interface StudyFromDB {
   id: string;
   title: string;
   description: string;
   is_free: boolean;
+  cover_image_url: string;
 }
 
 const CHAPTERS_PER_PAGE = 10; // Definindo 10 capítulos por página
@@ -47,7 +51,7 @@ const StudyDetail = () => {
   const { studyId } = useParams<{ studyId: string }>();
   const { session, isPro: isUserPro } = useSession();
   const navigate = useNavigate();
-  const [study, setStudy] = useState<Study | null>(null);
+  const [study, setStudy] = useState<StudyFromDB | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]); // Todos os capítulos
   const [loading, setLoading] = useState(true);
   const [showProAccessModal, setShowProAccessModal] = useState(false);
@@ -62,48 +66,85 @@ const StudyDetail = () => {
 
       setLoading(true);
 
-      const foundStudy = localStudies.find(s => s.id === studyId);
+      try {
+        // 1. Fetch study details from the database
+        const { data: studyData, error: studyError } = await supabase
+          .from('studies')
+          .select('*')
+          .eq('id', studyId)
+          .single();
 
-      if (!foundStudy) {
-        console.error('Estudo não encontrado no arquivo local:', studyId);
+        if (studyError) throw studyError;
+        if (!studyData) {
+          console.error('Estudo não encontrado no banco de dados:', studyId);
+          setLoading(false);
+          return;
+        }
+        setStudy(studyData);
+
+        // Check for Pro access
+        if (!studyData.is_free && !isUserPro) {
+          setShowProAccessModal(true);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Fetch all chapters for this study from the database
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('*')
+          .eq('study_id', studyId)
+          .order('chapter_number', { ascending: true });
+
+        if (chaptersError) throw chaptersError;
+        if (!chaptersData) {
+          console.error('Capítulos não encontrados para o estudo:', studyId);
+          setAllChapters([]);
+          setLoading(false);
+          return;
+        }
+
+        const chapterIds = chaptersData.map(c => c.id);
+
+        // 3. Fetch user progress for these chapters
+        const { data: progressData, error: progressError } = await supabase
+          .from('user_progress')
+          .select('chapter_id, completed_at')
+          .eq('user_id', session.user.id)
+          .in('chapter_id', chapterIds);
+
+        if (progressError) {
+          console.error('Erro ao buscar progresso dos capítulos:', progressError);
+          // Proceed with chapters marked as not completed if progress fetch fails
+          setAllChapters(chaptersData.map(c => ({ ...c, completed: false })));
+          setLoading(false);
+          return;
+        }
+
+        const completedChapterIds = new Set(
+          progressData
+            .filter(p => p.completed_at !== null)
+            .map(p => p.chapter_id)
+        );
+
+        const chaptersWithProgress = chaptersData.map(chapter => ({
+          ...chapter,
+          completed: completedChapterIds.has(chapter.id),
+        }));
+
+        setAllChapters(chaptersWithProgress);
+
+      } catch (error: any) {
+        console.error('Error fetching study data:', error);
+        setStudy(null);
+        setAllChapters([]);
+        // Only show error toast if it's not the 'no rows found' error for studyData
+        if (error.code !== 'PGRST116') {
+          showError('Erro ao carregar detalhes do estudo: ' + error.message);
+        }
+      } finally {
         setLoading(false);
-        return;
       }
-      setStudy(foundStudy);
-
-      if (!foundStudy.is_free && !isUserPro) {
-        setShowProAccessModal(true);
-        setLoading(false);
-        return;
-      }
-
-      const chapterIds = foundStudy.chapters.map(c => c.id);
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_progress')
-        .select('chapter_id, completed_at')
-        .eq('user_id', session.user.id)
-        .in('chapter_id', chapterIds);
-
-      if (progressError) {
-        console.error('Erro ao buscar progresso dos capítulos:', progressError);
-        setAllChapters(foundStudy.chapters.map(c => ({ ...c, completed: false })));
-        setLoading(false);
-        return;
-      }
-
-      const completedChapterIds = new Set(
-        progressData
-          .filter(p => p.completed_at !== null)
-          .map(p => p.chapter_id)
-      );
-
-      const chaptersWithProgress = foundStudy.chapters.map(chapter => ({
-        ...chapter,
-        completed: completedChapterIds.has(chapter.id),
-      }));
-
-      setAllChapters(chaptersWithProgress);
-      setLoading(false);
     };
 
     fetchStudyData();

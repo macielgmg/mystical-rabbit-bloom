@@ -1,5 +1,6 @@
+// src/utils/achievementDefinitions.ts
+
 import { supabase } from '@/integrations/supabase/client';
-import { localStudies } from '@/content/studyMetadata';
 import { achievementDefinitions, AchievementDefinition } from './achievementDefinitions'; // Importa as definições
 
 export interface Achievement {
@@ -15,16 +16,22 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
     const [
       { data: unlockedAchievementsData, error: unlockedError },
       { data: allAchievementsFromDb, error: allAchievementsError },
-      { data: userProgressData, error: userProgressError }
+      { data: userProgressData, error: userProgressError },
+      { data: allStudiesData, error: allStudiesError }, // Fetch all studies
+      { data: allChaptersData, error: allChaptersError }, // Fetch all chapters
     ] = await Promise.all([
       supabase.from('user_achievements').select('achievement_id').eq('user_id', userId),
-      supabase.from('achievements').select('*'), // Busca as definições de conquistas do DB (com IDs)
-      supabase.from('user_progress').select('chapter_id, study_id').eq('user_id', userId).not('completed_at', 'is', null)
+      supabase.from('achievements').select('*'),
+      supabase.from('user_progress').select('chapter_id, study_id').eq('user_id', userId).not('completed_at', 'is', null),
+      supabase.from('studies').select('id'), // Only need study IDs
+      supabase.from('chapters').select('id, study_id'), // Need chapter IDs and their study_id
     ]);
 
     if (unlockedError) throw unlockedError;
     if (allAchievementsError) throw allAchievementsError;
     if (userProgressError) throw userProgressError;
+    if (allStudiesError) throw allStudiesError;
+    if (allChaptersError) throw allChaptersError;
 
     if (!allAchievementsFromDb) {
       console.error("Não foi possível buscar a lista de conquistas do banco de dados.");
@@ -39,7 +46,7 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
     const totalCompletedChapters = userProgressData?.length || 0;
     const completedStudies = new Set<string>();
     
-    // Mapeia capítulos concluídos por estudo para verificar estudos completos
+    // Mapeia capítulos concluídos por estudo
     const completedChaptersByStudy: { [studyId: string]: number } = {};
     userProgressData?.forEach(progress => {
       if (progress.study_id) {
@@ -47,10 +54,17 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
       }
     });
 
+    // Mapeia total de capítulos por estudo
+    const totalChaptersByStudy: { [studyId: string]: number } = {};
+    allChaptersData?.forEach(chapter => {
+      totalChaptersByStudy[chapter.study_id] = (totalChaptersByStudy[chapter.study_id] || 0) + 1;
+    });
+
     // Verifica quais estudos foram completamente concluídos
-    localStudies.forEach(study => {
-      if (completedChaptersByStudy[study.id] === study.chapters.length) {
-        completedStudies.add(study.id);
+    allStudiesData?.forEach(study => {
+      const studyId = study.id;
+      if (totalChaptersByStudy[studyId] && completedChaptersByStudy[studyId] === totalChaptersByStudy[studyId]) {
+        completedStudies.add(studyId);
       }
     });
 
@@ -66,10 +80,9 @@ export const checkAndAwardAchievements = async (userId: string): Promise<Achieve
 
       if (!achievementInDb) {
         console.warn(`Definição de conquista "${definition.name}" não encontrada no banco de dados. Por favor, certifique-se de que ela foi inserida.`);
-        continue; // Pula se a conquista não estiver no DB
+        continue;
       }
 
-      // Se a conquista não foi desbloqueada e a condição é atendida, adiciona para ser concedida
       if (!unlockedIds.has(achievementInDb.id) && definition.checkCondition(conditionData)) {
         achievementsToAward.push(achievementInDb);
       }

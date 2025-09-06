@@ -6,24 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/contexts/SessionContext';
 import { ArrowLeft, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
-import { localStudyContent } from '@/content/salmosContent';
-import { localStudies } from '@/content/studyMetadata';
-import { showSuccess, showError, showAchievementToast } from '@/utils/toast';
+import { localStudyContent } from '@/content/salmosContent'; // Mantido para o conteúdo textual
+import { showError, showAchievementToast } from '@/utils/toast';
 import { checkAndAwardAchievements } from '@/utils/achievements';
-import { useQueryClient } from '@tanstack/react-query'; // Importar useQueryClient
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ChapterDetailData {
   id: string;
   title: string;
   chapter_number: number;
+  study_id: string; // Adicionado study_id
   study_title: string;
   bible_text: string;
   explanation: string;
   application: string;
 }
 
-interface LocalChapterMetadata {
+interface ChapterFromDB {
   id: string;
+  study_id: string;
   chapter_number: number;
   title: string;
 }
@@ -32,24 +33,23 @@ const ChapterDetail = () => {
   const { studyId, chapterId } = useParams<{ studyId: string; chapterId: string }>();
   const { session } = useSession();
   const navigate = useNavigate();
-  const queryClient = useQueryClient(); // Inicializar useQueryClient
+  const queryClient = useQueryClient();
   const [chapterData, setChapterData] = useState<ChapterDetailData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userNotes, setUserNotes] = useState<string>('');
   const [initialNotes, setInitialNotes] = useState<string>('');
-  const [allChaptersInStudy, setAllChaptersInStudy] = useState<LocalChapterMetadata[]>([]);
+  const [allChaptersInStudy, setAllChaptersInStudy] = useState<ChapterFromDB[]>([]);
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(-1);
   const [completedChaptersCount, setCompletedChaptersCount] = useState(0);
   const [totalChaptersCount, setTotalChaptersCount] = useState(0);
 
-
   const saveChapterProgress = useCallback(async (
     currentChapterId: string,
-    currentStudyId: string, // Adicionado currentStudyId
+    currentStudyId: string,
     userId: string,
     notes: string,
-    markAsCompleted: boolean // Explicitamente indica se deve marcar como concluído
+    markAsCompleted: boolean
   ) => {
     const { data: existingProgress, error: fetchError } = await supabase
       .from('user_progress')
@@ -58,7 +58,7 @@ const ChapterDetail = () => {
       .eq('chapter_id', currentChapterId)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means "no rows found"
+    if (fetchError && fetchError.code !== 'PGRST116') {
       showError('Erro ao verificar progresso: ' + fetchError.message);
       console.error('Error fetching existing progress:', fetchError);
       return false;
@@ -66,14 +66,12 @@ const ChapterDetail = () => {
 
     const updateData: { notes: string; completed_at?: string | null; study_id?: string } = { notes: notes };
     
-    // Se markAsCompleted for true, define completed_at para agora.
-    // Se markAsCompleted for false, e já existia um completed_at, mantém. Caso contrário, null.
     if (markAsCompleted) {
       updateData.completed_at = new Date().toISOString();
     } else {
       updateData.completed_at = existingProgress?.completed_at || null;
     }
-    updateData.study_id = currentStudyId; // Sempre incluir study_id
+    updateData.study_id = currentStudyId;
 
     if (existingProgress) {
       const { error: updateError } = await supabase
@@ -92,7 +90,7 @@ const ChapterDetail = () => {
         .insert({ 
           user_id: userId, 
           chapter_id: currentChapterId, 
-          study_id: currentStudyId, // Inserir study_id
+          study_id: currentStudyId,
           notes: notes, 
           completed_at: markAsCompleted ? new Date().toISOString() : null 
         });
@@ -113,113 +111,148 @@ const ChapterDetail = () => {
     }
     setLoading(true);
 
-    const foundStudy = localStudies.find(s => s.id === studyId);
-    if (!foundStudy) {
-      console.error('Estudo não encontrado no arquivo local:', studyId);
-      setLoading(false);
-      return;
-    }
+    try {
+      // 1. Fetch study details from DB
+      const { data: studyData, error: studyError } = await supabase
+        .from('studies')
+        .select('id, title')
+        .eq('id', studyId)
+        .single();
 
-    setAllChaptersInStudy(foundStudy.chapters);
-    setTotalChaptersCount(foundStudy.chapters.length);
-
-    const chapterIndex = foundStudy.chapters.findIndex(c => c.id === chapterId);
-    setCurrentChapterIndex(chapterIndex);
-
-    const chapterDB = foundStudy.chapters[chapterIndex];
-    if (!chapterDB) {
-      console.error('Capítulo não encontrado no arquivo local:', chapterId);
-      setLoading(false);
-      return;
-    }
-
-    let bible_text = '';
-    let explanation = '';
-    let application = '';
-
-    const studyKey = foundStudy.title.toLowerCase().replace(/\s/g, '-');
-    const localContentForStudy = localStudyContent[studyKey];
-
-    if (localContentForStudy) {
-      const localChapter = localContentForStudy.find(
-        (c) => c.chapter_number === chapterDB.chapter_number
-      );
-      if (localChapter) {
-        bible_text = localChapter.bible_text;
-        explanation = localChapter.explanation;
-        application = localChapter.application;
-      } else {
-        console.warn(`Local content not found for chapter ${chapterDB.chapter_number} in study ${studyKey}`);
+      if (studyError) throw studyError;
+      if (!studyData) {
+        console.error('Estudo não encontrado no banco de dados:', studyId);
+        setLoading(false);
+        return;
       }
+
+      // 2. Fetch current chapter details from DB
+      const { data: chapterDB, error: chapterError } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('id', chapterId)
+        .eq('study_id', studyId)
+        .single();
+
+      if (chapterError) throw chapterError;
+      if (!chapterDB) {
+        console.error('Capítulo não encontrado no banco de dados:', chapterId);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Fetch all chapters for the study to determine navigation and total count
+      const { data: allChaptersData, error: allChaptersError } = await supabase
+        .from('chapters')
+        .select('id, chapter_number, title')
+        .eq('study_id', studyId)
+        .order('chapter_number', { ascending: true });
+
+      if (allChaptersError) throw allChaptersError;
+      if (!allChaptersData) {
+        console.error('Não foi possível carregar todos os capítulos para o estudo:', studyId);
+        setAllChaptersInStudy([]);
+        setTotalChaptersCount(0);
+      } else {
+        setAllChaptersInStudy(allChaptersData);
+        setTotalChaptersCount(allChaptersData.length);
+        const chapterIndex = allChaptersData.findIndex(c => c.id === chapterId);
+        setCurrentChapterIndex(chapterIndex);
+      }
+
+      // 4. Get textual content from local file using chapter_number
+      let bible_text = '';
+      let explanation = '';
+      let application = '';
+
+      const studyKey = studyData.title.toLowerCase().replace(/\s/g, '-');
+      const localContentForStudy = localStudyContent[studyKey];
+
+      if (localContentForStudy) {
+        const localChapter = localContentForStudy.find(
+          (c) => c.chapter_number === chapterDB.chapter_number
+        );
+        if (localChapter) {
+          bible_text = localChapter.bible_text;
+          explanation = localChapter.explanation;
+          application = localChapter.application;
+        } else {
+          console.warn(`Local content not found for chapter ${chapterDB.chapter_number} in study ${studyKey}`);
+        }
+      }
+
+      setChapterData({
+        id: chapterDB.id,
+        title: chapterDB.title,
+        chapter_number: chapterDB.chapter_number,
+        study_id: studyData.id,
+        study_title: studyData.title,
+        bible_text,
+        explanation,
+        application,
+      });
+
+      // 5. Fetch user progress and notes for current chapter
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_progress')
+        .select('id, notes, completed_at')
+        .eq('user_id', session.user.id)
+        .eq('chapter_id', chapterId)
+        .single();
+      
+      if (!progressError && progressData) {
+        setIsCompleted(!!progressData.completed_at);
+        setUserNotes(progressData.notes || '');
+        setInitialNotes(progressData.notes || '');
+      } else {
+        setIsCompleted(false);
+        setUserNotes('');
+        setInitialNotes('');
+      }
+
+      // 6. Fetch overall study progress for progress bar
+      const { data: allProgress, error: allProgressError } = await supabase
+        .from('user_progress')
+        .select('chapter_id, completed_at')
+        .eq('user_id', session.user.id)
+        .eq('study_id', studyId); // Filter by study_id
+
+      if (!allProgressError && allProgress) {
+        const completed = allProgress.filter(p => p.completed_at !== null).length;
+        setCompletedChaptersCount(completed);
+      } else {
+        setCompletedChaptersCount(0);
+      }
+
+    } catch (error: any) {
+      console.error('Error in fetchChapterAndStudyData:', error);
+      showError('Erro ao carregar o capítulo: ' + error.message);
+      setChapterData(null);
+    } finally {
+      setLoading(false);
     }
-
-    setChapterData({
-      id: chapterDB.id,
-      title: chapterDB.title,
-      chapter_number: chapterDB.chapter_number,
-      study_title: foundStudy.title,
-      bible_text,
-      explanation,
-      application,
-    });
-
-    // Fetch user progress and notes for current chapter
-    const { data: progressData, error: progressError } = await supabase
-      .from('user_progress')
-      .select('id, notes, completed_at')
-      .eq('user_id', session.user.id)
-      .eq('chapter_id', chapterId)
-      .single();
-    
-    if (!progressError && progressData) {
-      setIsCompleted(!!progressData.completed_at);
-      setUserNotes(progressData.notes || '');
-      setInitialNotes(progressData.notes || '');
-    } else {
-      setIsCompleted(false);
-      setUserNotes('');
-      setInitialNotes('');
-    }
-
-    // Fetch overall study progress
-    const { data: allProgress, error: allProgressError } = await supabase
-      .from('user_progress')
-      .select('chapter_id, completed_at')
-      .eq('user_id', session.user.id)
-      .in('chapter_id', foundStudy.chapters.map(c => c.id));
-
-    if (!allProgressError && allProgress) {
-      const completed = allProgress.filter(p => p.completed_at !== null).length;
-      setCompletedChaptersCount(completed);
-    } else {
-      setCompletedChaptersCount(0);
-    }
-
-    setLoading(false);
-  }, [chapterId, studyId, session, saveChapterProgress]); // Adicionado saveChapterProgress como dependência
+  }, [chapterId, studyId, session]);
 
   useEffect(() => {
     fetchChapterAndStudyData();
   }, [fetchChapterAndStudyData]);
 
   const handleAdvance = async () => {
-    if (!session || !chapterId || !studyId) return;
+    if (!session || !chapterData) return;
 
-    // Sempre tenta marcar como concluído ao avançar
-    const success = await saveChapterProgress(chapterId, studyId, session.user.id, userNotes, true); // Passa studyId
+    const success = await saveChapterProgress(chapterData.id, chapterData.study_id, session.user.id, userNotes, true);
 
     if (success) {
-      // Após salvar com sucesso, atualiza o estado local
-      setIsCompleted(true); // Marca como concluído localmente
+      setIsCompleted(true);
       
-      // REMOVIDO: Lógica de verificação e exibição de conquistas
-      // const newAchievements = await checkAndAwardAchievements(session.user.id);
-      // newAchievements.forEach((ach, index) => {
-      //   setTimeout(() => showAchievementToast(ach), index * 700);
-      // });
+      // Check and award achievements
+      const newAchievements = await checkAndAwardAchievements(session.user.id);
+      newAchievements.forEach((ach, index) => {
+        setTimeout(() => showAchievementToast(ach), index * 700);
+      });
 
-      // Invalida a query de dados do perfil para que a página de Perfil recarregue as conquistas (se reativadas no futuro)
       queryClient.invalidateQueries({ queryKey: ['profileData', session.user.id] });
+      queryClient.invalidateQueries({ queryKey: ['studyProgress', session.user.id, studyId] }); // Invalida o progresso do estudo
 
       if (nextChapter) {
         navigate(`/study/${studyId}/chapter/${nextChapter.id}`);
@@ -232,13 +265,13 @@ const ChapterDetail = () => {
   };
 
   const handleSaveNotes = async () => {
-    if (!session || !chapterId || !studyId) return; // Garante que studyId está disponível
+    if (!session || !chapterData) return;
 
-    const success = await saveChapterProgress(chapterId, studyId, session.user.id, userNotes, isCompleted); // Passa studyId
+    const success = await saveChapterProgress(chapterData.id, chapterData.study_id, session.user.id, userNotes, isCompleted);
     if (success) {
       setInitialNotes(userNotes);
       showSuccess('Anotações salvas com sucesso!');
-      fetchChapterAndStudyData(); // Re-busca para garantir que todas as contagens sejam atualizadas
+      // No need to refetch all data, just update local state or invalidate specific queries if needed
     }
   };
 
@@ -249,7 +282,6 @@ const ChapterDetail = () => {
   const prevChapter = currentChapterIndex > 0 ? allChaptersInStudy[currentChapterIndex - 1] : null;
   const nextChapter = currentChapterIndex < allChaptersInStudy.length - 1 ? allChaptersInStudy[currentChapterIndex + 1] : null;
   const progressPercentage = totalChaptersCount > 0 ? (completedChaptersCount / totalChaptersCount) * 100 : 0;
-
 
   if (loading) {
     return (
@@ -262,6 +294,9 @@ const ChapterDetail = () => {
   if (!chapterData) {
     return <div className="text-center p-8">Capítulo não encontrado.</div>;
   }
+
+  // ID do estudo "150 Salmos Explicados" para formatação especial
+  const SALMOS_STUDY_ID = '8a1b2c3d-4e5f-4678-9012-34567890abcd';
 
   return (
     <div className="container mx-auto max-w-3xl">
@@ -293,9 +328,11 @@ const ChapterDetail = () => {
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      <Card className="mt-20"> {/* Adicionado mt-20 para compensar a barra fixa */}
+      <Card className="mt-20">
         <CardHeader>
-          <CardTitle className="text-3xl text-primary">{chapterData.title}</CardTitle>
+          <CardTitle className="text-3xl text-primary">
+            {chapterData.study_id === SALMOS_STUDY_ID ? chapterData.title : `Capítulo ${chapterData.chapter_number}: ${chapterData.title}`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="prose max-w-none">

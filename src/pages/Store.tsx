@@ -12,23 +12,33 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/contexts/SessionContext";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { localStudies } from '@/content/studyMetadata';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { showError, showStudyAcquiredToast } from '@/utils/toast';
-import { cn } from '@/lib/utils'; // Importar cn para combinar classes
+import { cn } from '@/lib/utils';
 
-interface StudyWithProgress {
+interface StudyFromDB {
   id: string;
   title: string;
   description: string;
   is_free: boolean;
-  imageUrl: string;
+  cover_image_url: string;
+}
+
+interface ChapterFromDB {
+  id: string;
+  study_id: string;
+  chapter_number: number;
+  title: string;
+}
+
+interface StudyWithProgress extends StudyFromDB {
+  imageUrl: string; // Mapeia cover_image_url para imageUrl para compatibilidade
   completedChapters: number;
   totalChapters: number;
   progressPercentage: number;
-  isAcquired: boolean; // Adicionado: indica se o estudo já foi adquirido (tem algum progresso)
+  isAcquired: boolean;
 }
 
 const Store = () => {
@@ -38,56 +48,86 @@ const Store = () => {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'free' | 'pro'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [acquiringStudyId, setAcquiringStudyId] = useState<string | null>(null); // Estado para o botão de adquirir
+  const [acquiringStudyId, setAcquiringStudyId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStudiesAndProgress = async () => {
       if (sessionLoading) return;
 
       setLoading(true);
+      const userId = session?.user?.id;
 
-      let completedChapterIds = new Set<string>();
-      let acquiredChapterIds = new Set<string>(); // Novo conjunto para rastrear todos os capítulos com algum progresso
+      try {
+        // 1. Fetch all studies from the database
+        const { data: studiesData, error: studiesError } = await supabase
+          .from('studies')
+          .select('*');
 
-      if (session?.user) {
-        const { data: allProgress, error } = await supabase
-          .from('user_progress')
-          .select('chapter_id, completed_at')
-          .eq('user_id', session.user.id);
+        if (studiesError) throw studiesError;
 
-        if (error) {
-          console.error('Error fetching all user progress:', error);
-        } else if (allProgress) {
-          allProgress.forEach(p => {
-            acquiredChapterIds.add(p.chapter_id); // Adiciona todos os capítulos com qualquer entrada de progresso
-            if (p.completed_at !== null) {
-              completedChapterIds.add(p.chapter_id); // Adiciona apenas se estiver realmente concluído
-            }
-          });
+        // 2. Fetch all chapters for all studies
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('id, study_id');
+
+        if (chaptersError) throw chaptersError;
+
+        const chaptersByStudy: { [studyId: string]: ChapterFromDB[] } = {};
+        chaptersData.forEach(chapter => {
+          if (!chaptersByStudy[chapter.study_id]) {
+            chaptersByStudy[chapter.study_id] = [];
+          }
+          chaptersByStudy[chapter.study_id].push(chapter);
+        });
+
+        // 3. Fetch all user progress (if user is logged in)
+        let completedChapterIds = new Set<string>();
+        let acquiredStudyIds = new Set<string>();
+
+        if (userId) {
+          const { data: allUserProgress, error: progressError } = await supabase
+            .from('user_progress')
+            .select('chapter_id, completed_at, study_id')
+            .eq('user_id', userId);
+
+          if (progressError) {
+            console.error('Error fetching all user progress:', progressError);
+          } else if (allUserProgress) {
+            allUserProgress.forEach(p => {
+              if (p.study_id) acquiredStudyIds.add(p.study_id);
+              if (p.completed_at !== null) {
+                completedChapterIds.add(p.chapter_id);
+              }
+            });
+          }
         }
+
+        const studiesWithCalculatedProgress: StudyWithProgress[] = studiesData.map(study => {
+          const studyChapters = chaptersByStudy[study.id] || [];
+          const totalChapters = studyChapters.length;
+          
+          const completedChapters = studyChapters.filter(chapter => completedChapterIds.has(chapter.id)).length;
+          const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
+          
+          return {
+            ...study,
+            imageUrl: study.cover_image_url,
+            completedChapters,
+            totalChapters,
+            progressPercentage,
+            isAcquired: acquiredStudyIds.has(study.id),
+          };
+        });
+
+        setStoreItemsWithProgress(studiesWithCalculatedProgress);
+
+      } catch (error: any) {
+        console.error('Error fetching studies for store:', error);
+        showError('Erro ao carregar estudos: ' + error.message);
+        setStoreItemsWithProgress([]);
+      } finally {
+        setLoading(false);
       }
-
-      const studiesData = localStudies.map(study => {
-        const totalChapters = study.chapters.length;
-        const chapterIdsInStudy = study.chapters.map(c => c.id);
-        
-        const completedChapters = chapterIdsInStudy.filter(id => completedChapterIds.has(id)).length;
-        // Um estudo é considerado adquirido se pelo menos um de seus capítulos tiver uma entrada em user_progress
-        const isAcquired = chapterIdsInStudy.some(id => acquiredChapterIds.has(id));
-        
-        const progressPercentage = totalChapters > 0 ? (completedChapters / totalChapters) * 100 : 0;
-
-        return {
-          ...study,
-          completedChapters,
-          totalChapters,
-          progressPercentage,
-          isAcquired, // Inclui a nova flag
-        };
-      });
-
-      setStoreItemsWithProgress(studiesData);
-      setLoading(false);
     };
 
     fetchStudiesAndProgress();
@@ -102,42 +142,63 @@ const Store = () => {
     setAcquiringStudyId(studyId);
 
     try {
-      const studyToAcquire = localStudies.find(s => s.id === studyId);
-      if (!studyToAcquire || studyToAcquire.chapters.length === 0) {
-        showError("Estudo ou capítulos não encontrados.");
+      // Fetch the study and its first chapter from the database
+      const { data: studyToAcquire, error: studyError } = await supabase
+        .from('studies')
+        .select('*')
+        .eq('id', studyId)
+        .single();
+
+      if (studyError) throw studyError;
+      if (!studyToAcquire) {
+        showError("Estudo não encontrado.");
         return;
       }
 
-      // Inserir progresso para o primeiro capítulo para "adquirir" o estudo
-      const firstChapterId = studyToAcquire.chapters[0].id;
-      const { error } = await supabase
+      const { data: firstChapter, error: chapterError } = await supabase
+        .from('chapters')
+        .select('id')
+        .eq('study_id', studyId)
+        .order('chapter_number', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (chapterError) throw chapterError;
+      if (!firstChapter) {
+        showError("Capítulos não encontrados para este estudo.");
+        return;
+      }
+
+      // Insert progress for the first chapter to "acquire" the study
+      const { error: insertError } = await supabase
         .from('user_progress')
         .insert({
           user_id: session.user.id,
-          chapter_id: firstChapterId,
+          study_id: studyId, // Ensure study_id is passed
+          chapter_id: firstChapter.id,
           notes: '',
-          completed_at: null, // Não está completo, apenas adquirido
+          completed_at: null, // Not complete, just acquired
         });
 
-      if (error) {
-        if (error.code === '23505') { // Duplicate key error (already acquired)
+      if (insertError) {
+        if (insertError.code === '23505') { // Duplicate key error (already acquired)
           showError("Você já adquiriu este estudo.");
         } else {
-          showError("Erro ao adquirir o estudo: " + error.message);
+          showError("Erro ao adquirir o estudo: " + insertError.message);
         }
         return;
       }
 
-      showStudyAcquiredToast({ title: studyTitle, studyId: studyId }); // Passa studyId aqui
-      setNewStudyNotification(true); // Ativa a notificação na aba "Estudos"
+      showStudyAcquiredToast({ title: studyTitle, studyId: studyId });
+      setNewStudyNotification(true);
       
-      // Atualiza o estado local para refletir que o estudo foi adquirido
+      // Update local state to reflect that the study was acquired
       setStoreItemsWithProgress(prevItems => prevItems.map(item => 
         item.id === studyId ? { ...item, isAcquired: true } : item
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro inesperado ao adquirir estudo:", error);
-      showError("Ocorreu um erro inesperado.");
+      showError("Ocorreu um erro inesperado: " + error.message);
     } finally {
       setAcquiringStudyId(null);
     }
@@ -167,7 +228,7 @@ const Store = () => {
   }
 
   return (
-    <div className="container mx-auto"> {/* Removido pt-6 daqui */}
+    <div className="container mx-auto">
       <h1 className="text-3xl font-bold mb-2 text-primary">Descobrir</h1>
       <p className="text-muted-foreground mb-6">Aprofunde suas raízes na fé com novos módulos.</p>
 
@@ -230,7 +291,7 @@ const Store = () => {
                   </>
                 )}
               </CardContent>
-              <CardFooter className="p-4 pt-0"> {/* Alterado de pt-2 para pt-0 */}
+              <CardFooter className="p-4 pt-0">
                 {item.isAcquired ? (
                   <Button
                     asChild
