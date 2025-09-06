@@ -17,6 +17,17 @@ import { Loader2, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { showError, showStudyAcquiredToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface StudyFromDB {
   id: string;
@@ -155,15 +166,18 @@ const Store = () => {
         return;
       }
 
-      const { data: firstChapter, error: chapterError } = await supabase
+      // Fetch all chapters for the study, then pick the first one
+      const { data: chapters, error: chapterError } = await supabase
         .from('chapters')
         .select('id')
         .eq('study_id', studyId)
         .order('chapter_number', { ascending: true })
-        .limit(1)
-        .single();
+        .limit(1); // Removido .single()
 
       if (chapterError) throw chapterError;
+      
+      const firstChapter = chapters && chapters.length > 0 ? chapters[0] : null;
+
       if (!firstChapter) {
         showError("Capítulos não encontrados para este estudo.");
         return;
