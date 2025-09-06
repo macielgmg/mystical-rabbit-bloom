@@ -154,6 +154,26 @@ export const localStudies: LocalStudyMetadata[] = [
         chapter_number: 4,
         title: 'Capítulo 4: O Tesouro Escondido e a Pérola de Grande Valor',
       },
+      {
+        id: 'e1f2a3b4-c5d6-4567-e890-12345678901e', // NOVO ID para O Joio e o Trigo
+        chapter_number: 5,
+        title: 'Capítulo 5: O Joio e o Trigo',
+      },
+      {
+        id: 'f1a2b3c4-d5e6-4678-f901-23456789012f', // NOVO ID para O Credor Incompassivo
+        chapter_number: 6,
+        title: 'Capítulo 6: O Credor Incompassivo',
+      },
+      {
+        id: 'a1b2c3d4-e5f6-4789-a012-34567890123g', // NOVO ID para As Dez Virgens
+        chapter_number: 7,
+        title: 'Capítulo 7: As Dez Virgens',
+      },
+      {
+        id: 'b1c2d3e4-f5a6-4890-b123-45678901234h', // NOVO ID para Os Talentos
+        chapter_number: 8,
+        title: 'Capítulo 8: Os Talentos',
+      },
     ],
   },
   {
